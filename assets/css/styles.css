@@ -1,0 +1,49 @@
+/* Custom Teal Color from the image */
+:root {
+    --brand-teal: #007664; 
+}
+
+body {
+    background-color: var(--brand-teal);
+    overflow-x: hidden;
+}
+
+.left-panel {
+    background-color: var(--brand-teal);
+    z-index: 2;
+}
+
+/* The Diagonal Cut Effect */
+.right-panel {
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    clip-path: polygon(15% 0, 100% 0, 100% 100%, 0% 100%);
+    margin-left: -5%; /* Pulls it slightly left to overlap */
+}
+
+/* Rounded Card Style */
+.login-card {
+    border-radius: 30px !important;
+    border: none;
+}
+
+/* Custom Button */
+.btn-teal {
+    background-color: var(--brand-teal);
+    border: none;
+}
+
+.btn-teal:hover {
+    background-color: #005a4d;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .right-panel {
+        display: none; /* Hide image on mobile to focus on the form */
+    }
+    .left-panel {
+        height: 100vh;
+    }
+}
