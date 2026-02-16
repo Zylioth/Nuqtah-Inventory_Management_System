@@ -1,4 +1,4 @@
-/* Custom Teal Color from the image */
+
 :root {
     --brand-teal: #007664; 
 }
@@ -19,7 +19,6 @@ body {
     background-position: center;
     position: relative;
     clip-path: polygon(15% 0, 100% 0, 100% 100%, 0% 100%);
-    margin-left: -5%; /* Pulls it slightly left to overlap */
 }
 
 /* Rounded Card Style */
