@@ -37,6 +37,23 @@ body {
     background-color: #005a4d;
 }
 
+.hero-section {
+    /* Path to your building image */
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
+                url('../img/building_tahfiz.JPG');
+    
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 60vh; /* Adjust height as needed */
+    width: 100%;
+}
+
+/* Ensure the title stands out */
+.hero-section h1 {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .right-panel {
