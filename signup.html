@@ -11,7 +11,9 @@
     
     <div class="col-md-6 left-panel d-flex flex-column justify-content-center align-items-center p-4">
         <div class="brand-header text-white text-center mb-4">
-            <img src="assets/img/ITQSHHBLogo.png" alt="Institut Tahfiz Logo" class="mb-2" style="max-height: 80px;">
+            <a href="index.html">
+            <img src="assets/img/logoNuqtah_White.png" alt="Institut Tahfiz Logo" class="mb-2" style="max-height: 80px;">
+            </a>   
         </div>
 
         <div class="card login-card shadow-lg p-4 w-100" style="max-width: 500px;">
@@ -38,11 +40,10 @@
                     <label class="form-label text-muted small">Password</label>
                     <input type="password" class="form-control rounded-pill border-dark px-3" placeholder="Create Password">
                 </div>
-
-                <div class="mb-4">
-                    <label class="form-label text-muted small">Confirm Password</label>
-                    <input type="password" class="form-control rounded-pill border-dark px-3" placeholder="Repeat Password">
-                </div>
+                
+                <div class="mb-4 d-flex justify-content-center">
+                    <div class="g-recaptcha" data-sitekey="6LdkWG8sAAAAAORds7qER4QXcMQogo5eWaRuoFfX"></div>
+                 </div>
                 
                 <button type="submit" class="btn btn-teal w-100 rounded-pill text-white fw-bold mb-3 py-2">SIGN UP</button>
                 
@@ -60,5 +61,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </body>
 </html>
