@@ -54,6 +54,33 @@ body {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
+/* Card Hover Effect */
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-top 0.3s ease;
+    border-top: 4px solid transparent !important;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15) !important;
+    border-top: 4px solid #004d40 !important; /* Your brand teal/green */
+}
+
+/* Icon Styling */
+.feature-icon {
+    color: #004d40;
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Section Background */
+section.container {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+}
+
+
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .right-panel {
