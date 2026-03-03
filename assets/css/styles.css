@@ -79,6 +79,31 @@ section.container {
     padding-bottom: 3rem;
 }
 
+/* Glassmorphism for the Hero Text container */
+.hero-section {
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('../img/Tahfiz_front.jpg');
+    background-size: cover;
+    background-position: center;
+    min-height: 80vh; /* Makes it feel more like a modern 'Stage' */
+}
+
+/* Modern Card Style */
+.card {
+    border-radius: 15px !important; /* Softer corners are more modern */
+    transition: all 0.3s ease-in-out;
+}
+
+.card h3 {
+    color: #004d40; /* Match your brand teal */
+    font-weight: 700;
+}
+
+/* Subtle background pattern */
+section.container {
+    background-image: radial-gradient(#ffffff1a 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
 
 
 /* Responsive adjustments */
