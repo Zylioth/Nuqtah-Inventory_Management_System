@@ -45,25 +45,25 @@ body {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    height: 60vh; /* Adjust height as needed */
+    height: 60vh; 
     width: 100%;
 }
 
-/* Ensure the title stands out */
+
 .hero-section h1 {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* Card Hover Effect */
-.card {
+/* Card Hover Effect in index*/
+.landing-card {
     transition: transform 0.3s ease, box-shadow 0.3s ease, border-top 0.3s ease;
     border-top: 4px solid transparent !important;
 }
 
-.card:hover {
+.landing-card:hover {
     transform: translateY(-10px);
     box-shadow: 0 15px 30px rgba(0,0,0,0.15) !important;
-    border-top: 4px solid #004d40 !important; /* Your brand teal/green */
+    border-top: 4px solid #004d40 !important;
 }
 
 /* Icon Styling */
