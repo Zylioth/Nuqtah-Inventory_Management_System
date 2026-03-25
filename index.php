@@ -1,3 +1,7 @@
+<?php
+session_start();
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,13 +17,18 @@
     <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: var(--brand-teal);">
     <div class="container">
 
-        <a class="navbar-brand d-flex align-items-center" href="index.html">
+        <a class="navbar-brand d-flex align-items-center" href="index.php">
             <img src="assets/img/logoNuqtah_White.png" alt="ITQSHHB Logo" height="50" class="d-inline-block align-top">
         </a>
 
         <div class="ms-auto">
-            <a href="login.html" class="btn btn-outline-light me-2">Login</a>
-            <a href="signup.html" class="btn btn-outline-light me-2">Register</a>
+    <?php if (isset($_SESSION['user_id'])): ?>
+        <span class="text-white me-3 small">Welcome, <?php echo htmlspecialchars($_SESSION['full_name']); ?></span>
+        <a href="actions/logout.php" class="btn btn-outline-danger">Logout</a>
+    <?php else: ?>
+        <a href="login.php" class="btn btn-outline-light me-2">Login</a>
+        <a href="signup.php" class="btn btn-outline-light me-2">Register</a>
+    <?php endif; ?>
         </div>
 
     </div>
@@ -30,7 +39,7 @@
         <h1 class="display-3 fw-bold">Welcome to Nuqtah</h1>
         <p class="lead mb-4">An IT Inventory Management System build for ITQSHHB</p>
         <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-            <a href="login.html" class="btn btn-outline-light btn-lg px-4">Login</a>
+            <a href="login.php" class="btn btn-outline-light btn-lg px-4">Login</a>
         </div>
     </div>
 </header>

@@ -1,3 +1,7 @@
+<?php
+session_start();
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,49 +11,54 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
-<body class="login-page"> <div class="container-fluid p-0 vh-100 d-flex flex-column flex-md-row">
+<body class="login-page"> 
+<div class="container-fluid p-0 vh-100 d-flex flex-column flex-md-row">
     
     <div class="col-md-6 left-panel d-flex flex-column justify-content-center align-items-center p-4">
         <div class="brand-header text-white text-center mb-4">
-            <a href="index.html">
-            <img src="assets/img/logoNuqtah_White.png" alt="Institut Tahfiz Logo" class="mb-2" style="max-height: 80px;">
+            <a href="index.php">
+                <img src="assets/img/logoNuqtah_White.png" alt="Logo" class="mb-2" style="max-height: 80px;">
             </a>   
         </div>
 
         <div class="card login-card shadow-lg p-4 w-100" style="max-width: 500px;">
             <h3 class="text-center text-muted mb-4">Create Account</h3>
             
-            <form>
+            <?php if(isset($_GET['error']) && $_GET['error'] == 'user_exists'): ?>
+                <div class="alert alert-warning small text-center">Username or Email already registered.</div>
+            <?php endif; ?>
+
+            <form action="actions/signup_process.php" method="POST">
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label text-muted small">Full Name</label>
-                        <input type="text" class="form-control rounded-pill border-dark px-3" placeholder="Your Name">
+                        <input type="text" name="full_name" class="form-control rounded-pill border-dark px-3" placeholder="Your Name" required>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label text-muted small">Username</label>
-                        <input type="text" class="form-control rounded-pill border-dark px-3" placeholder="Username">
+                        <input type="text" name="username" class="form-control rounded-pill border-dark px-3" placeholder="Username" required>
                     </div>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label text-muted small">Email Address</label>
-                    <input type="email" class="form-control rounded-pill border-dark px-3" placeholder="email@example.com">
+                    <input type="email" name="email" class="form-control rounded-pill border-dark px-3" placeholder="email@example.com" required>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label text-muted small">Password</label>
-                    <input type="password" class="form-control rounded-pill border-dark px-3" placeholder="Create Password">
+                    <input type="password" name="password" class="form-control rounded-pill border-dark px-3" placeholder="Create Password" required>
                 </div>
                 
                 <div class="mb-4 d-flex justify-content-center">
                     <div class="g-recaptcha" data-sitekey="6LdkWG8sAAAAAORds7qER4QXcMQogo5eWaRuoFfX"></div>
                  </div> 
                 
-                <button type="submit" class="btn btn-teal w-100 rounded-pill text-white fw-bold mb-3 py-2">SIGN UP</button>
+                <button type="submit" name="signup_btn" class="btn btn-teal w-100 rounded-pill text-white fw-bold mb-3 py-2">SIGN UP</button>
                 
                 <div class="text-center small">
                     <span class="text-muted">Already have an account?</span> 
-                    <a href="login.html" class="text-primary text-decoration-none">Login</a>
+                    <a href="login.php" class="text-primary text-decoration-none">Login</a>
                 </div>
             </form>
         </div>

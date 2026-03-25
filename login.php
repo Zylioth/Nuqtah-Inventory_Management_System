@@ -1,3 +1,7 @@
+<?php
+session_start();
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,29 +17,44 @@
     
     <div class="col-md-6 left-panel d-flex flex-column justify-content-center align-items-center p-4">
         <div class="brand-header text-white text-center mb-4">
-            <a href="index.html">
-            <img src="assets/img/logoNuqtah_White.png" alt="Institut Tahfiz Logo" class="mb-2" style="max-height: 80px;">
+            <a href="index.php">
+                <img src="assets/img/logoNuqtah_White.png" alt="Logo" class="mb-2" style="max-height: 80px;">
             </a>
         </div>
 
         <div class="card login-card shadow-lg p-4 w-100" style="max-width: 450px;">
             <h3 class="text-center text-muted mb-4">Welcome to NUQTAH</h3>
             
-            <form>
+            <?php if (isset($_GET['signup']) && $_GET['signup'] == 'success'): ?>
+                <div class="alert alert-success small text-center" role="alert">
+                    Account created. Please wait for admin approval.
+                </div>
+            <?php endif; ?>
+
+            <?php if (isset($_GET['error'])): ?>
+                <div class="alert alert-danger small text-center" role="alert">
+                    <?php 
+                        if($_GET['error'] == 'account_pending') echo "Your account is awaiting admin approval.";
+                        else echo "Invalid username or password.";
+                    ?>
+                </div>
+            <?php endif; ?>
+
+            <form action="actions/login_process.php" method="POST">
                 <div class="mb-3">
                     <label class="form-label text-muted small">Username</label>
-                    <input type="text" class="form-control rounded-pill border-dark px-3" placeholder="Enter your username">
+                    <input type="text" name="username" class="form-control rounded-pill border-dark px-3" placeholder="Enter your username" required>
                 </div>
                 <div class="mb-4">
                     <label class="form-label text-muted small">Password</label>
-                    <input type="password" class="form-control rounded-pill border-dark px-3" placeholder="Enter Your Password">
+                    <input type="password" name="password" class="form-control rounded-pill border-dark px-3" placeholder="Enter Your Password" required>
                 </div>
                 
-                <button type="submit" class="btn btn-teal w-100 rounded-pill text-white fw-bold mb-3 py-2">LOGIN</button>
+                <button type="submit" name="login_btn" class="btn btn-teal w-100 rounded-pill text-white fw-bold mb-3 py-2">LOGIN</button>
                 
                 <div class="text-center small">
                     <span class="text-muted">Dont have account?</span> 
-                    <a href="signup.html" class="text-primary text-decoration-none">Sign Up</a>
+                    <a href="signup.php" class="text-primary text-decoration-none">Sign Up</a>
                 </div>
             </form>
         </div>
@@ -43,7 +62,7 @@
 
     <div class="col-md-6 right-panel d-none d-md-block" 
      style="background: linear-gradient(rgb(9 121 105 / 20%), rgb(9 121 105 / 25%)), url('assets/img/Tahfiz_clock.jpg'); background-size: cover; background-position: center;">
-</div>
+    </div>
 
 </div>
 
