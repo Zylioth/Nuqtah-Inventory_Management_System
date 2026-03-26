@@ -12,7 +12,7 @@ session_start();
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body class="login-page"> 
-<div class="container-fluid p-0 vh-100 d-flex flex-column flex-md-row">
+<div class="container-fluid p-0 min-vh-100 d-flex flex-column flex-md-row">
     
     <div class="col-md-6 left-panel d-flex flex-column justify-content-center align-items-center p-4">
         <div class="brand-header text-white text-center mb-4">
@@ -61,7 +61,7 @@ session_start();
                         placeholder="Min. 8 characters" 
                         required>
                     <div class="form-text x-small text-muted ms-2">
-                        Must include: 8+ chars, Uppercase, Lowercase, Number, and Symbol (!@#$%^&*)
+                        Must include: Uppercase, Lowercase, Number, and Symbols
                     </div>
                 </div>
                 
