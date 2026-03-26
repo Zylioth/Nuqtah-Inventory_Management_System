@@ -28,6 +28,15 @@ session_start();
                 <div class="alert alert-warning small text-center">Username or Email already registered.</div>
             <?php endif; ?>
 
+            <?php if(isset($_GET['error'])): ?>
+    <div class="alert alert-danger py-2 small text-center">
+        <?php 
+            if($_GET['error'] == 'captcha_failed') echo "Security verification failed. Please try again.";
+            if($_GET['error'] == 'user_exists') echo "Username or Email is already taken.";
+        ?>
+    </div>
+<?php endif; ?>
+
             <form action="actions/signup_process.php" method="POST">
                 <div class="row">
                     <div class="col-md-6 mb-3">
@@ -47,9 +56,23 @@ session_start();
 
                 <div class="mb-3">
                     <label class="form-label text-muted small">Password</label>
-                    <input type="password" name="password" class="form-control rounded-pill border-dark px-3" placeholder="Create Password" required>
+                    <input type="password" name="password" 
+                        class="form-control rounded-pill border-dark px-3" 
+                        placeholder="Min. 8 characters" 
+                        required>
+                    <div class="form-text x-small text-muted ms-2">
+                        Must include: 8+ chars, Uppercase, Lowercase, Number, and Symbol (!@#$%^&*)
+                    </div>
                 </div>
                 
+                <div class="mb-3">
+                    <label class="form-label text-muted small">Password Strength</label>
+                    <div class="progress" style="height: 5px;">
+                        <div id="strength-bar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <small id="strength-text" class="text-muted small ms-1">Enter a password</small>
+                </div>
+
                 <div class="mb-4 d-flex justify-content-center">
                     <div class="g-recaptcha" data-sitekey="6LdkWG8sAAAAAORds7qER4QXcMQogo5eWaRuoFfX"></div>
                  </div> 
@@ -71,5 +94,21 @@ session_start();
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+<script src="assets/js/validation.js"></script>
+
+<script>
+document.getElementById("registrationForm").onsubmit = function(event) {
+    var response = grecaptcha.getResponse();
+    
+    if (response.length == 0) { 
+        //browser alert "pop-up"
+        alert("Please verify that you are not a robot before signing up.");
+        event.preventDefault(); // Stops the form from submitting
+        return false;
+    }
+    return true;
+};
+</script>
+
 </body>
 </html>
