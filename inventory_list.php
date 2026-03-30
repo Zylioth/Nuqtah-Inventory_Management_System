@@ -15,7 +15,6 @@ $stmt = $pdo->query("SELECT * FROM assets");
 $assets = $stmt->fetchAll();
 ?>
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -26,6 +25,10 @@ $assets = $stmt->fetchAll();
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="assets/css/styles.css">
     <style>
+        /* Better visibility for Low Stock warning */
+        .text-warning { color: #F57C00 !important; }
+        .bg-warning { background-color: #F57C00 !important; }
+                
         /* COLOR IKUT HIFI */
         .bg-teal { background-color: #00796B !important; }
         .btn-teal { background-color: #00796B; border: none; transition: 0.3s; color: white; }
@@ -57,30 +60,71 @@ $assets = $stmt->fetchAll();
         <button class="btn btn-outline-dark bg-white rounded-3 px-4"><i class="bi bi-plugin me-2"></i> Accessories</button>
     </div>
 
-   <div class="row g-4" id="inventoryGrid">
+    <div class="row g-4" id="inventoryGrid">
     <?php if (count($assets) > 0): ?>
         <?php foreach ($assets as $row): ?>
             <?php 
-                $is_available = ($row['current_stock'] > 0 && $row['status'] == 'Available');
-                $status_class = $is_available ? 'bg-success' : 'bg-danger';
-                $text_class = $is_available ? 'text-success' : 'text-danger';
+                // 1. Image Logic
+                $placeholder = "assets/img/no_image_available.jpg";
+                $check_path = __DIR__ . "/assets/img/" . $row['asset_image'];
+
+                if (!empty($row['asset_image']) && file_exists($check_path)) {
+                    $image_path = "assets/img/" . $row['asset_image'];
+                } else {
+                    $image_path = $placeholder;
+                }
+
+                $current_stock = $row['current_stock'];
+                $category = $row['category'];
+                $low_stock_threshold = 5; // Set your warning level here
+
+                if ($current_stock <= 0) {
+                    // 1. OUT OF STOCK / NOT AVAILABLE (RED)
+                    $status_class = "bg-danger";
+                    $text_class = "text-danger";
+                    $can_borrow = false;
+
+                    if ($category === 'Consumables' || $category === 'Stationery') {
+                        $display_status = "Out of Stock";
+                    } else {
+                        $display_status = "Not Available";
+                    }
+                } elseif ($current_stock <= $low_stock_threshold) {
+                    // 2. LOW STOCK WARNING (ORANGE/WARNING)
+                    $display_status = "Low Stock (" . $current_stock . " left)";
+                    $status_class = "bg-warning";
+                    $text_class = "text-warning";
+                    $can_borrow = true;
+                } else {
+                    // 3. FULLY AVAILABLE (GREEN)
+                    $display_status = "Available";
+                    $status_class = "bg-success";
+                    $text_class = "text-success";
+                    $can_borrow = true;
+                }
             ?>
+            
+
             <div class="col-md-4 asset-item">
                 <div class="card asset-card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
-                    <img src="assets/img/<?php echo htmlspecialchars($row['asset_image']); ?>" class="card-img-top" alt="Equipment" style="height: 200px; object-fit: cover;">
+                    <img src="<?php echo htmlspecialchars($image_path); ?>" 
+                         class="card-img-top" 
+                         alt="<?php echo htmlspecialchars($row['asset_name']); ?>" 
+                         style="height: 200px; object-fit: cover;">
+                    
                     <div class="card-body px-4 pb-4">
                         <p class="text-muted x-small mb-1"><?php echo htmlspecialchars($row['category']); ?></p>
                         <h5 class="card-title fw-bold mb-3"><?php echo htmlspecialchars($row['asset_name']); ?></h5>
                         
                         <div class="d-flex align-items-center small mb-4">
                             <span class="status-dot me-2 <?php echo $status_class; ?>"></span>
-                            <span class="<?php echo $text_class; ?>">
-                                <?php echo $is_available ? 'Available' : 'Currently in use'; ?>
+                            <span class="<?php echo $text_class; ?> fw-bold">
+                                <?php echo $display_status; ?>
                             </span>
                         </div>
 
-                        <button class="btn btn-teal w-100 rounded-pill py-2 fw-bold" <?php echo !$is_available ? 'disabled' : ''; ?>>
-                            + Add to Borrowing Cart
+                        <button class="btn btn-teal w-100 rounded-pill py-2 fw-bold" <?php echo !$can_borrow ? 'disabled' : ''; ?>>
+                            <?php echo $can_borrow ? '+ Add to Borrowing Cart' : $display_status; ?>
                         </button>
                     </div>
                 </div>
@@ -91,6 +135,7 @@ $assets = $stmt->fetchAll();
             <p class="text-muted">No equipment found in the database.</p>
         </div>
     <?php endif; ?>
+    </div>
 </div>
 
 <?php if ($user_role === 'Admin'): ?>
@@ -106,7 +151,4 @@ $assets = $stmt->fetchAll();
 <?php include 'includes/footer.php'; ?>
 
 </body>
-
-
-
 </html>

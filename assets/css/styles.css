@@ -20,12 +20,10 @@ footer {
     z-index: 2;
 }
 
-/* The Diagonal Cut Effect */
 .right-panel {
     background-size: cover;
     background-position: center;
     position: relative;
-    clip-path: polygon(15% 0, 100% 0, 100% 100%, 0% 100%);
 }
 
 /* Rounded Card Style */
