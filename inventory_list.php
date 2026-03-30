@@ -140,7 +140,7 @@ $assets = $stmt->fetchAll();
 
 <?php if ($user_role === 'Admin'): ?>
 <div class="position-fixed bottom-0 end-0 p-4" style="z-index: 1050;">
-    <a href="admin/dashboard.php" class="btn btn-teal rounded-pill shadow-lg px-4 py-3 d-flex align-items-center">
+    <a href="admin/index.php" class="btn btn-teal rounded-pill shadow-lg px-4 py-3 d-flex align-items-center">
         <i class="bi bi-speedometer2 fs-5 me-2"></i>
         <span class="fw-bold">ADMIN DASHBOARD</span>
     </a>

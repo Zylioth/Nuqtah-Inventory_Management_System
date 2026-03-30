@@ -2,7 +2,6 @@
 session_start();
 include '../includes/db_connect.php'; 
 
-// Check if the user is an Admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
     header("Location: ../login.php");
     exit();
@@ -10,13 +9,16 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
 
 // 1. Fetch Statistics
 $total_assets = $pdo->query("SELECT COUNT(*) FROM assets")->fetchColumn();
-$pending_requests = $pdo->query("SELECT COUNT(*) FROM borrowings WHERE status = 'Pending'")->fetchColumn();
+
+// Corrected table name to borrowing_requests
+$pending_requests = $pdo->query("SELECT COUNT(*) FROM borrowing_requests WHERE status = 'Pending'")->fetchColumn();
+
 $low_stock_count = $pdo->query("SELECT COUNT(*) FROM assets WHERE current_stock > 0 AND current_stock <= 5")->fetchColumn();
 $out_of_stock_count = $pdo->query("SELECT COUNT(*) FROM assets WHERE current_stock = 0")->fetchColumn();
 
-// 2. Fetch Recent Pending Requests (joining with users and assets tables)
+// 2. Fetch Recent Pending Requests
 $query = "SELECT b.*, u.full_name, a.asset_name 
-          FROM borrowings b 
+          FROM borrowing_requests b 
           JOIN users u ON b.user_id = u.user_id 
           JOIN assets a ON b.asset_id = a.asset_id 
           WHERE b.status = 'Pending' 
@@ -24,3 +26,236 @@ $query = "SELECT b.*, u.full_name, a.asset_name
 $pending_list = $pdo->query($query)->fetchAll();
 ?>
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuqtah Admin - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root { --sidebar-width: 260px; --teal-primary: #00796B; --teal-dark: #004D40; }
+        body { background-color: #f8f9fa; }
+
+                /* Sidebar Fixed Positioning */
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            border-right: 1px solid #eee;
+        }
+
+        /* Push the main content to the right */
+        .main-content {
+            margin-left: 260px;
+            padding: 30px;
+        }
+
+        /* Nav Link Styling */
+        .nav-link {
+            color: #555;
+            padding: 10px 20px;
+            margin: 2px 10px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            background-color: #f8f9fa;
+            color: #00796B;
+        }
+
+        .nav-link.active {
+            background-color: #00796B !important;
+            color: white !important;
+        }
+
+        .x-small {
+            font-size: 0.7rem;
+        }
+
+        /* Stats Cards */
+        .card-stats { border: none; border-radius: 15px; height: 100%; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
+        .bg-teal { background-color: var(--teal-primary) !important; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar d-flex flex-column p-3 shadow-sm bg-white">
+    <div class="text-center mb-4 mt-2">
+        <a href="index.php" class="text-decoration-none">
+            <?php 
+                // Path from admin/index.php back to assets/img/
+                $logo_path = "../assets/img/logoNuqtah.png";
+                $physical_path = __DIR__ . "/../assets/img/logoNuqtah.png";
+                
+                if (file_exists($physical_path)): 
+            ?>
+                <img src="<?php echo $logo_path; ?>" alt="Nuqtah Logo" style="max-width: 170px; height: auto;">
+            <?php else: ?>
+                <div class="py-2">
+                    <span class="fs-4 fw-bold" style="color: #00796B;">NUQTAH</span>
+                    <p class="x-small text-muted mb-0">Inventory System</p>
+                </div>
+            <?php endif; ?>
+        </a>
+    </div>
+
+    <hr class="mx-3 mb-4 opacity-25">
+    
+    <div class="px-3 mb-2">
+        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">Management</small>
+    </div>
+    
+    <ul class="nav nav-pills flex-column mb-auto">
+        <li class="nav-item">
+            <a href="index.php" class="nav-link active">
+                <i class="bi bi-grid-1x2-fill me-2"></i> Dashboard
+            </a>
+        </li>
+        <li>
+            <a href="manage_assets.php" class="nav-link">
+                <i class="bi bi-archive me-2"></i> Inventory
+            </a>
+        </li>
+        <li>
+            <a href="borrowing_requests.php" class="nav-link">
+                <i class="bi bi-clipboard-check me-2"></i> Requests
+            </a>
+        </li>
+        <li>
+            <a href="users.php" class="nav-link">
+                <i class="bi bi-people me-2"></i> Users
+            </a>
+        </li>
+    </ul>
+    
+    <div class="mt-auto">
+        <hr class="mx-3 opacity-25">
+        <ul class="nav nav-pills flex-column pb-3">
+            <li>
+                <a href="../inventory_list.php" class="nav-link">
+                    <i class="bi bi-shop me-2"></i> User View
+                </a>
+            </li>
+            <li>
+                <a href="../logout.php" class="nav-link text-danger fw-bold">
+                    <i class="bi bi-box-arrow-right me-2"></i> Sign Out
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div class="main-content">
+    <header class="mb-4">
+        <h2 class="fw-bold">Dashboard</h2>
+        <p class="text-muted small">Welcome back to the ITQSHHB Inventory Management System.</p>
+    </header>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card card-stats p-3 border-start border-4 border-success">
+                <div class="d-flex align-items-center">
+                    <div class="p-3 bg-success bg-opacity-10 text-success rounded-3 me-3">
+                        <i class="bi bi-box-seam fs-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-muted mb-0 small">Total Assets</p>
+                        <h4 class="fw-bold mb-0"><?php echo $total_assets; ?></h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card card-stats p-3 border-start border-4 border-primary">
+                <div class="d-flex align-items-center">
+                    <div class="p-3 bg-primary bg-opacity-10 text-primary rounded-3 me-3">
+                        <i class="bi bi-clock-history fs-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-muted mb-0 small">Pending</p>
+                        <h4 class="fw-bold mb-0"><?php echo $pending_requests; ?></h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card card-stats p-3 border-start border-4 border-warning">
+                <div class="d-flex align-items-center">
+                    <div class="p-3 bg-warning bg-opacity-10 text-warning rounded-3 me-3">
+                        <i class="bi bi-exclamation-triangle fs-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-muted mb-0 small">Low Stock</p>
+                        <h4 class="fw-bold mb-0"><?php echo $low_stock_count; ?></h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card card-stats p-3 border-start border-4 border-danger">
+                <div class="d-flex align-items-center">
+                    <div class="p-3 bg-danger bg-opacity-10 text-danger rounded-3 me-3">
+                        <i class="bi bi-x-circle fs-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-muted mb-0 small">Out of Stock</p>
+                        <h4 class="fw-bold mb-0"><?php echo $out_of_stock_count; ?></h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0">Recent Borrowing Requests</h5>
+                    <a href="borrowing_requests.php" class="text-teal small text-decoration-none">View All</a>
+                </div>
+                <div class="table-responsive px-3 pb-3">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Student</th>
+                                <th>Asset</th>
+                                <th>Request Date</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (count($pending_list) > 0): ?>
+                                <?php foreach ($pending_list as $request): ?>
+                                <tr>
+                                    <td class="fw-bold"><?php echo htmlspecialchars($request['full_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($request['asset_name']); ?></td>
+                                    <td class="text-muted"><?php echo date('d M Y', strtotime($request['request_date'])); ?></td>
+                                    <td class="text-end">
+                                        <button class="btn btn-success btn-sm rounded-pill px-3">Approve</button>
+                                        <button class="btn btn-outline-danger btn-sm rounded-pill px-3">Reject</button>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr><td colspan="4" class="text-center py-4">No pending requests found.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
