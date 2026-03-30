@@ -1,3 +1,60 @@
+<?php
+session_start();
+include '../includes/db_connect.php'; 
+
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
+    header("Location: ../login.php");
+    exit();
+}
+
+$message = ""; 
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // 1. Collect form data
+    $name = $_POST['asset_name'];
+    $category = $_POST['category'];
+    $stock = $_POST['current_stock'];
+    
+    // Set status automatically
+    $status = ($stock > 0) ? 'Available' : 'Out of Stock';
+    
+    // 2. Handle Image Upload
+    $image_name = "";
+    if (isset($_FILES['asset_image']) && $_FILES['asset_image']['error'] == 0) {
+        $target_dir = "../assets/img/";
+        
+        // Ensure the directory exists
+        if (!is_dir($target_dir)) {
+            mkdir($target_dir, 0777, true);
+        }
+
+        $file_ext = pathinfo($_FILES["asset_image"]["name"], PATHINFO_EXTENSION);
+        // Create a unique filename
+        $image_name = time() . "_" . preg_replace("/[^a-zA-Z0-9.]/", "_", $name) . "." . $file_ext;
+        $target_file = $target_dir . $image_name;
+
+        move_uploaded_file($_FILES["asset_image"]["tmp_name"], $target_file);
+    }
+
+    // 3. Database Insertion
+    try {
+        $sql = "INSERT INTO assets (asset_name, category, current_stock, status, asset_image) 
+                VALUES (?, ?, ?, ?, ?)";
+        $stmt = $pdo->prepare($sql);
+        $result = $stmt->execute([$name, $category, $stock, $status, $image_name]);
+
+        if ($result) {
+            $message = "success";
+        } else {
+            $message = "error";
+        }
+    } catch (PDOException $e) {
+        // Log the error if necessary
+        $message = "error";
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
