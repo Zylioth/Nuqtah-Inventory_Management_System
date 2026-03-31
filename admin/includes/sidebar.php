@@ -2,10 +2,12 @@
     <div class="text-center mb-4 mt-2">
         <a href="index.php" class="text-decoration-none">
             <?php 
+                // This is the URL path the browser uses
                 $logo_path = "../assets/img/logoNuqtah.png";
-                $physical_path = __DIR__ . "/../assets/img/logoNuqtah.png";
                 
-                if (file_exists($physical_path)): 
+                // This checks if the file exists relative to the admin folder 
+                // where index.php or manage_assets.php is running
+                if (file_exists("../assets/img/logoNuqtah.png")): 
             ?>
                 <img src="<?php echo $logo_path; ?>" alt="Nuqtah Logo" style="max-width: 170px; height: auto;">
             <?php else: ?>
