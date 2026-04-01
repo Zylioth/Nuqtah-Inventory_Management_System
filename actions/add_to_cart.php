@@ -1,22 +1,17 @@
 <?php
 session_start();
+$id = $_POST['asset_id'];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['asset_id'])) {
-    $asset_id = $_POST['asset_id'];
-
-    // Initialize cart if not set
-    if (!isset($_SESSION['cart'])) {
-        $_SESSION['cart'] = [];
-    }
-
-    // Add asset to cart if it's not already there
-    if (!in_array($asset_id, $_SESSION['cart'])) {
-        $_SESSION['cart'][] = $asset_id;
-        $msg = "added";
-    } else {
-        $msg = "exists";
-    }
-
-    header("Location: ../inventory_list.php?msg=" . $msg);
-    exit();
+if (!isset($_SESSION['cart'])) {
+    $_SESSION['cart'] = [];
 }
+
+// If item exists, increase quantity; if not, set to 1
+if (isset($_SESSION['cart'][$id])) {
+    $_SESSION['cart'][$id]++;
+} else {
+    $_SESSION['cart'][$id] = 1;
+}
+
+header("Location: ../inventory_list.php?msg=added");
+exit();
