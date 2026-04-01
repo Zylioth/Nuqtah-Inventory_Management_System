@@ -68,7 +68,7 @@
             
             <hr class="mx-4">
             
-            <a href="logout.php" class="list-group-item list-group-item-action text-danger">
+            <a href="actions/logout.php" class="list-group-item list-group-item-action text-danger">
                 <i class="bi bi-box-arrow-right me-3"></i>Logout
             </a>
         </div>
