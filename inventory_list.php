@@ -46,6 +46,7 @@ $assets = $stmt->fetchAll();
 <body class="bg-light">
 
 <?php include 'includes/header.php'; ?> 
+<?php include 'includes/users_sidebar.php'; ?>
 
 <div class="container mt-4">
     <div class="row justify-content-center mb-4">
