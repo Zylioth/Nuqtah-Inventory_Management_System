@@ -28,7 +28,6 @@ $requests = $stmt->fetchAll();
         :root { --sidebar-width: 260px; --teal-primary: #00796B; }
         body { background-color: #f8f9fa; }
         
-        /* Add this section to fix the sidebar positioning */
         .sidebar { 
             width: var(--sidebar-width); 
             height: 100vh; 
@@ -43,7 +42,6 @@ $requests = $stmt->fetchAll();
         .main-content { margin-left: var(--sidebar-width); padding: 30px; }
         .status-badge { font-size: 0.85rem; padding: 6px 12px; }
         
-        /* Ensure nav links look consistent */
         .nav-link { color: #555; padding: 10px 20px; margin: 2px 10px; border-radius: 8px; text-decoration: none; display: block; }
         .nav-link.active { background-color: var(--teal-primary) !important; color: white !important; }
         .nav-link:hover:not(.active) { background-color: #f1f1f1; }
@@ -66,7 +64,7 @@ $requests = $stmt->fetchAll();
                     <tr>
                         <th class="ps-4">Requester</th>
                         <th>Asset Item</th>
-                        <th>Request Date</th>
+                        <th>Quantity</th> <th>Request Date</th>
                         <th>Expected Return</th>
                         <th>Status</th>
                         <th class="text-end pe-4">Actions</th>
@@ -91,6 +89,11 @@ $requests = $stmt->fetchAll();
                                 <div class="fw-bold"><?php echo htmlspecialchars($row['asset_name']); ?></div>
                                 <span class="badge bg-light text-dark border"><?php echo $row['category']; ?></span>
                             </td>
+                            <td>
+                                <span class="badge rounded-pill" style="background-color: rgba(0, 121, 107, 0.1); color: #004D40;">
+                                    <?php echo htmlspecialchars($row['quantity']); ?>
+                                </span>
+                            </td>
                             <td><?php echo date('d M Y', strtotime($row['request_date'])); ?></td>
                             <td><?php echo date('d M Y', strtotime($row['return_date'])); ?></td>
                             <td>
@@ -100,7 +103,7 @@ $requests = $stmt->fetchAll();
                             </td>
                             <td class="text-end pe-4">
                                 <?php if ($status == 'Pending'): ?>
-                                    <a href="process_request.php?id=<?php echo $row['request_id']; ?>&action=approve" class="btn btn-sm btn-success rounded-pill px-3">Approve</a>
+                                    <a href="actions/process_request.php?id=<?php echo $row['request_id']; ?>&action=approve" class="btn btn-sm btn-success rounded-pill px-3">Approve</a>
                                     <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="rejectRequest(<?php echo $row['request_id']; ?>)">Reject</button>
                                 <?php else: ?>
                                     <span class="text-muted small italic">Processed</span>
@@ -118,7 +121,7 @@ $requests = $stmt->fetchAll();
 function rejectRequest(id) {
     const reason = prompt("Please enter the reason for rejection:");
     if (reason != null) {
-        window.location.href = `process_request.php?id=${id}&action=reject&note=${encodeURIComponent(reason)}`;
+        window.location.href = `actions/process_request.php?id=${id}&action=reject&note=${encodeURIComponent(reason)}`;
     }
 }
 </script>
