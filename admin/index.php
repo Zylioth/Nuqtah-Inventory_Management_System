@@ -17,7 +17,7 @@ $low_stock_count = $pdo->query("SELECT COUNT(*) FROM assets WHERE current_stock 
 $out_of_stock_count = $pdo->query("SELECT COUNT(*) FROM assets WHERE current_stock = 0")->fetchColumn();
 
 // 2. Fetch Recent Pending Requests
-$query = "SELECT b.*, u.full_name, a.asset_name 
+$query = "SELECT b.request_id, b.request_date, b.quantity, u.full_name, a.asset_name 
           FROM borrowing_requests b 
           JOIN users u ON b.user_id = u.user_id 
           JOIN assets a ON b.asset_id = a.asset_id 
@@ -88,10 +88,28 @@ $pending_list = $pdo->query($query)->fetchAll();
 <?php include 'includes/sidebar.php'; ?>
 
 <div class="main-content">
+    <?php if (isset($_GET['msg'])): ?>
+        <?php if ($_GET['msg'] == 'success'): ?>
+            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong>Success!</strong> The request has been processed and stock updated.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php elseif ($_GET['msg'] == 'error'): ?>
+            <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4" role="alert">
+                <i class="bi bi-exclamation-octagon-fill me-2"></i>
+                <strong>Error!</strong> Something went wrong while updating the inventory.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+    <?php endif; ?>
+
     <header class="mb-4">
         <h2 class="fw-bold">Dashboard</h2>
         <p class="text-muted small">Welcome back to the ITQSHHB Inventory Management System.</p>
     </header>
+
+<!-- Quick Sumary of Assets kira tracking -->
 
     <div class="row g-4 mb-4">
         <div class="col-md-3">
@@ -151,6 +169,8 @@ $pending_list = $pdo->query($query)->fetchAll();
         </div>
     </div>
 
+<!-- Latest Borrowing Requests -->
+
     <div class="row">
         <div class="col-lg-12">
             <div class="card border-0 shadow-sm rounded-4">
@@ -165,6 +185,7 @@ $pending_list = $pdo->query($query)->fetchAll();
                                 <th>Student</th>
                                 <th>Asset</th>
                                 <th>Request Date</th>
+                                <th>Quantity</th>
                                 <th class="text-end">Actions</th>
                             </tr>
                         </thead>
@@ -175,14 +196,22 @@ $pending_list = $pdo->query($query)->fetchAll();
                                     <td class="fw-bold"><?php echo htmlspecialchars($request['full_name']); ?></td>
                                     <td><?php echo htmlspecialchars($request['asset_name']); ?></td>
                                     <td class="text-muted"><?php echo date('d M Y', strtotime($request['request_date'])); ?></td>
+                                    
+                                    <td>
+                                        <span class="badge px-3 py-2 rounded-pill" 
+                                            style="background-color: rgba(0, 121, 107, 0.1); color: #004D40; border: 1px solid rgba(0, 121, 107, 0.2);">
+                                            <i class="bi bi-hash x-small"></i> <?php echo htmlspecialchars($request['quantity']); ?>
+                                        </span>
+                                    </td>
+
                                     <td class="text-end">
-                                        <button class="btn btn-success btn-sm rounded-pill px-3">Approve</button>
-                                        <button class="btn btn-outline-danger btn-sm rounded-pill px-3">Reject</button>
+                                        <a href="actions/process_request.php?id=<?php echo $request['request_id']; ?>&status=Approved" class="btn btn-success btn-sm rounded-pill px-3">Approve</a>
+                                        <a href="actions/process_request.php?id=<?php echo $request['request_id']; ?>&status=Rejected" class="btn btn-outline-danger btn-sm rounded-pill px-3">Reject</a>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr><td colspan="4" class="text-center py-4">No pending requests found.</td></tr>
+                                <tr><td colspan="5" class="text-center py-4 text-muted">No pending requests found.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
