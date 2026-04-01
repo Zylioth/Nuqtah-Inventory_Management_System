@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="alert alert-success border-0 rounded-3 mb-4">Changes saved successfully!</div>
                     <?php endif; ?>
 
-                    <form action="edit_assets.php?id=<?php echo $asset_id; ?>" method="POST" enctype="multipart/form-data">
+                    <form action="edit_asset.php?id=<?php echo $asset_id; ?>" method="POST" enctype="multipart/form-data">
                         <div class="mb-4">
                             <label class="form-label fw-bold">Asset Name</label>
                             <input type="text" name="asset_name" class="form-control py-2" value="<?php echo htmlspecialchars($asset['asset_name']); ?>" required>

@@ -23,6 +23,7 @@ $assets = $stmt->fetchAll();
     <title>Nuqtah - Inventory List</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="assets/css/styles.css">
     <style>
         /* Better visibility for Low Stock warning */
@@ -123,9 +124,14 @@ $assets = $stmt->fetchAll();
                             </span>
                         </div>
 
-                        <button class="btn btn-teal w-100 rounded-pill py-2 fw-bold" <?php echo !$can_borrow ? 'disabled' : ''; ?>>
-                            <?php echo $can_borrow ? '+ Add to Borrowing Cart' : $display_status; ?>
-                        </button>
+                        <form action="actions/add_to_cart.php" method="POST">
+                            <input type="hidden" name="asset_id" value="<?php echo $row['asset_id']; ?>">
+                            <button type="submit" class="btn btn-teal w-100 rounded-pill py-2 fw-bold" <?php echo !$can_borrow ? 'disabled' : ''; ?>>
+                                <i class="bi bi-cart-plus me-2"></i>
+                                <?php echo $can_borrow ? 'Add to Borrowing Cart' : $display_status; ?>
+                            </button>
+                        </form>
+
                     </div>
                 </div>
             </div>
@@ -149,6 +155,53 @@ $assets = $stmt->fetchAll();
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <?php include 'includes/footer.php'; ?>
+
+<!-- floating cart bawah Kiri -->
+
+<?php if (isset($_SESSION['cart']) && count($_SESSION['cart']) > 0): ?>
+<div class="position-fixed bottom-0 start-0 p-4" style="z-index: 1050;">
+    <a href="cart.php" class="btn btn-dark rounded-pill shadow-lg px-4 py-3 d-flex align-items-center position-relative">
+        <i class="bi bi-shopping-basket fs-5 me-2"></i>
+        <span class="fw-bold text-uppercase">View Cart</span>
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light">
+            <?php echo count($_SESSION['cart']); ?>
+        </span>
+    </a>
+</div>
+<?php endif; ?>
+
+<!-- message klaau success masuk cart -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const msg = urlParams.get('msg');
+
+    if (msg === 'added') {
+        Swal.fire({
+            icon: 'success',
+            title: 'Added to Cart',
+            toast: true,
+            position: 'top-end',
+            timer: 2000,
+            showConfirmButton: false,
+            timerProgressBar: true
+        });
+    } else if (msg === 'submitted') {
+        Swal.fire({
+            icon: 'success',
+            title: 'Request Submitted!',
+            text: 'Your borrowing request has been sent to the ICT Department for approval.',
+            confirmButtonColor: '#00796B',
+            confirmButtonText: 'Great!'
+        });
+    }
+
+    // Clean URL only if there was a message to prevent constant refreshing
+    if (msg) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+</script>
 
 </body>
 </html>

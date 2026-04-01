@@ -12,8 +12,6 @@
                     <i class="bi bi-box-arrow-right me-1"></i> Logout
                 </a>
             </div>
-        <div class="ms-auto text-white fw-bold">
-            <i class="bi bi-cart3 me-1"></i> My Cart
-        </div>
+       
     </div>
 </nav>

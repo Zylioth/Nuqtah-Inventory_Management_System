@@ -41,7 +41,7 @@
             </a>
         </li>
         <li>
-            <a href="borrowing_requests.php" class="nav-link <?php echo ($current_page == 'borrowing_requests.php') ? 'active' : ''; ?>">
+            <a href="view_requests.php" class="nav-link <?php echo ($current_page == 'view_requests.php') ? 'active' : ''; ?>">
                 <i class="bi bi-clipboard-check me-2"></i> Requests
             </a>
         </li>
