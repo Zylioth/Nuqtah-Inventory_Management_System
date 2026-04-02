@@ -9,8 +9,26 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_role = $_SESSION['role'] ?? 'Staff';
+$user_id = $_SESSION['user_id']; // Ensure this is defined
 
-// PDO syntax to fetch all assets
+// --- NEW NOTIFICATION LOGIC START ---
+// Fetch the most recent request for this user to show a status update
+$notifQuery = "SELECT r.*, a.asset_name 
+               FROM borrowing_requests r 
+               JOIN assets a ON r.asset_id = a.asset_id 
+               WHERE r.user_id = ? 
+               AND r.is_read = 0 
+               AND r.status != 'Pending'
+               ORDER BY r.request_date DESC LIMIT 1";
+$notifStmt = $pdo->prepare($notifQuery);
+$notifStmt->execute([$user_id]);
+$latest_request = $notifStmt->fetch();
+
+// Determine if we should show the modal (only on first login per session)
+$show_status_modal = isset($_SESSION['first_login_session']) && $_SESSION['first_login_session'] && $latest_request;
+// --- NEW NOTIFICATION LOGIC END ---
+
+// Your existing fetch for assets
 $stmt = $pdo->query("SELECT * FROM assets");
 $assets = $stmt->fetchAll();
 ?>
@@ -48,6 +66,32 @@ $assets = $stmt->fetchAll();
 <?php include 'includes/header.php'; ?> 
 <?php include 'includes/users_sidebar.php'; ?>
 
+<!-- Notify User on Status request -->
+<div class="container mt-3">
+    <?php if ($latest_request && $latest_request['is_read'] == 0 && $latest_request['status'] !== 'Pending'): ?>
+        <?php 
+            // Determine color based on status
+            $alertClass = 'alert-info';
+            if ($latest_request['status'] == 'Approved') $alertClass = 'alert-success';
+            if ($latest_request['status'] == 'Rejected') $alertClass = 'alert-danger';
+            if ($latest_request['status'] == 'On Loan') $alertClass = 'alert-primary';
+        ?>
+        <div class="alert <?php echo $alertClass; ?> alert-dismissible fade show shadow-sm border-0 rounded-4 p-3 mb-4" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-bell-fill fs-4 me-3"></i>
+                <div>
+                    <strong class="d-block">Request Status Updated!</strong>
+                    Your request for <strong><?php echo htmlspecialchars($latest_request['asset_name']); ?></strong> is now <strong><?php echo $latest_request['status']; ?></strong>. 
+                    <a href="my_requests.php" class="alert-link text-decoration-underline">View details in My Requests</a>.
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    <?php endif; ?>
+</div>
+
+
+<!-- Search TBC -->
 <div class="container mt-4">
     <div class="row justify-content-center mb-4">
         <div class="col-md-10">
@@ -145,6 +189,7 @@ $assets = $stmt->fetchAll();
     </div>
 </div>
 
+<!-- if admin then nampak admin dashboard -->
 <?php if ($user_role === 'Admin'): ?>
 <div class="position-fixed bottom-0 end-0 p-4" style="z-index: 1050;">
     <a href="admin/index.php" class="btn btn-teal rounded-pill shadow-lg px-4 py-3 d-flex align-items-center">
@@ -157,7 +202,68 @@ $assets = $stmt->fetchAll();
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <?php include 'includes/footer.php'; ?>
 
-<!-- floating cart bawah Kiri -->
+<!-- pop notificiation masa awal login -->
+
+<?php if ($show_status_modal): ?>
+<div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-body p-4 text-center">
+                <?php 
+                    $status = $latest_request['status'];
+                    $icon = 'bi-info-circle';
+                    $color = 'text-primary';
+                    $msg = "Your request is being processed.";
+
+                    if ($status == 'Approved') {
+                        $icon = 'bi-check-circle-fill';
+                        $color = 'text-success';
+                        $msg = "Your request for <strong>" . htmlspecialchars($latest_request['asset_name']) . "</strong> has been <strong>Approved</strong>! Please head to the ICT Department for collection.";
+                    } elseif ($status == 'On Loan') {
+                        $icon = 'bi-box-seam-fill';
+                        $color = 'text-teal';
+                        $msg = "You are currently borrowing <strong>" . htmlspecialchars($latest_request['asset_name']) . "</strong>. Don't forget to check the handover notes!";
+                    } elseif ($status == 'Rejected') {
+                        $icon = 'bi-exclamation-octagon-fill';
+                        $color = 'text-danger';
+                        $msg = "Your request for <strong>" . htmlspecialchars($latest_request['asset_name']) . "</strong> was <strong>Rejected</strong>.";
+                    }
+                ?>
+                
+                <div class="display-4 <?php echo $color; ?> mb-3">
+                    <i class="bi <?php echo $icon; ?>"></i>
+                </div>
+                <h4 class="fw-bold">Request Update</h4>
+                <p class="text-muted px-3"><?php echo $msg; ?></p>
+                
+                <?php if ($status == 'Rejected' && !empty($latest_request['admin_note'])): ?>
+                    <div class="alert alert-danger small mb-3">
+                        <strong>Reason:</strong> <?php echo htmlspecialchars($latest_request['admin_note']); ?>
+                    </div>
+                <?php endif; ?>
+
+                <div class="d-grid gap-2">
+                    <a href="my_requests.php" class="btn btn-teal rounded-pill py-2 fw-bold">View My History</a>
+                    <button type="button" class="btn btn-link text-muted btn-sm text-decoration-none" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var statusModal = new bootstrap.Modal(document.getElementById('statusModal'));
+        statusModal.show();
+    });
+</script>
+
+<?php 
+    // IMPORTANT: We only unset the session flag here.
+    // We DO NOT update the database here so the banner stays visible.
+    unset($_SESSION['first_login_session']); 
+endif; // This matches "if ($show_status_modal)"
+?>
 
 <?php if (isset($_SESSION['cart']) && count($_SESSION['cart']) > 0): ?>
 <div class="position-fixed bottom-0 start-0 p-4" style="z-index: 1050;">
@@ -170,9 +276,6 @@ $assets = $stmt->fetchAll();
     </a>
 </div>
 <?php endif; ?>
-
-<!-- message klaau success masuk cart -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     const urlParams = new URLSearchParams(window.location.search);
@@ -198,7 +301,6 @@ $assets = $stmt->fetchAll();
         });
     }
 
-    // Clean URL only if there was a message to prevent constant refreshing
     if (msg) {
         window.history.replaceState({}, document.title, window.location.pathname);
     }

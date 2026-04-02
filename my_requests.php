@@ -9,6 +9,11 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
+// --- CLEAR NOTIFICATIONS HERE ---
+// When the user views this page, mark all their status updates as 'read'
+$clearNotif = $pdo->prepare("UPDATE borrowing_requests SET is_read = 1 WHERE user_id = ? AND is_read = 0");
+$clearNotif->execute([$user_id]);
+
 // Fetch requests for the logged-in user
 $query = "SELECT r.*, a.asset_name, a.category 
           FROM borrowing_requests r
@@ -83,6 +88,10 @@ $my_requests = $stmt->fetchAll();
                                     elseif (!empty($row['admin_note'])) {
                                         // This catches notes for Approved or other statuses
                                         echo htmlspecialchars($row['admin_note']);
+                                    }
+                                    elseif ($row['status'] == 'Approved') {
+                                        // kalau approved liatkan ani
+                                        echo '<span class="text-primary italic">Please head to the ICT Department for collection.</span>';
                                     }
                                     else {
                                         echo '<span class="text-muted">-</span>';

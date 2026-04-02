@@ -20,6 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['full_name'] = $user['full_name'];
             $_SESSION['role'] = $user['role'];
             $_SESSION['status'] = $user['account_status'];
+            $_SESSION['first_login_session'] = true; // The trigger flag
 
             // Redirect to the inventory list
             header("Location: ../inventory_list.php");
