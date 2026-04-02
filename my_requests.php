@@ -69,8 +69,25 @@ $my_requests = $stmt->fetchAll();
                                     <?php echo $row['status']; ?>
                                 </span>
                             </td>
-                            <td class="text-end pe-4 text-muted small">
-                                <?php echo htmlspecialchars($row['admin_note'] ?? '-'); ?>
+                            <td class="text-end pe-4 small">
+                                <?php 
+                                    if ($row['status'] == 'Rejected' && !empty($row['admin_note'])) {
+                                        echo '<span class="text-danger fw-bold">Reason:</span> ' . htmlspecialchars($row['admin_note']);
+                                    } 
+                                    elseif ($row['status'] == 'On Loan' && !empty($row['condition_note'])) {
+                                        echo '<span class="text-dark fw-bold">Handover Condition:</span> ' . htmlspecialchars($row['condition_note']);
+                                    }
+                                    elseif ($row['status'] == 'Returned' && !empty($row['return_note'])) {
+                                        echo '<span class="text-success fw-bold">Return Note:</span> ' . htmlspecialchars($row['return_note']);
+                                    }
+                                    elseif (!empty($row['admin_note'])) {
+                                        // This catches notes for Approved or other statuses
+                                        echo htmlspecialchars($row['admin_note']);
+                                    }
+                                    else {
+                                        echo '<span class="text-muted">-</span>';
+                                    }
+                                ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
