@@ -156,10 +156,18 @@ $low_stock_threshold = 5;
                             <td class="ps-4">
                                 <img src="<?php echo $img; ?>" class="asset-thumb border" alt="Asset">
                             </td>
+
                             <td>
                                 <div class="fw-bold"><?php echo htmlspecialchars($row['asset_name']); ?></div>
                                 <small class="text-muted">ID: #<?php echo str_pad($row['asset_id'], 4, '0', STR_PAD_LEFT); ?></small>
+                                <br>
+                                <button class="btn btn-link btn-sm p-0 text-decoration-none text-teal fw-bold" 
+                                        onclick="viewAssetTags(<?php echo $row['asset_id']; ?>, '<?php echo addslashes($row['asset_name']); ?>')"
+                                        style="color: var(--teal-primary); font-size: 0.75rem;">
+                                    <i class="bi bi-tag-fill me-1"></i>View Serial Tags
+                                </button>
                             </td>
+
                             <td><span class="badge bg-light text-dark border"><?php echo $row['category']; ?></span></td>
                             
                             <td>
@@ -212,6 +220,37 @@ $low_stock_threshold = 5;
         </div>
     </div>
 
+<div class="modal fade" id="assetTagModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-dark text-white rounded-top-4">
+                <h5 class="modal-title fw-bold" id="tagModalTitle">Asset Tags</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="p-3 border-bottom bg-light">
+                    <form id="addTagForm" class="row g-2">
+                        <input type="hidden" name="asset_id" id="add_tag_asset_id">
+                        <div class="col-8">
+                            <input type="text" name="unique_tag" class="form-control form-control-sm" placeholder="Enter Tag (e.g. ITQSHHB-001L)" required>
+                        </div>
+                        <div class="col-4">
+                            <button type="submit" class="btn btn-teal btn-sm w-100 text-white" style="background-color: #00796B;">
+                                <i class="bi bi-plus-circle me-1"></i>Add Tag
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div id="tagListBody">
+                    <div class="p-5 text-center"><div class="spinner-border text-teal"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
@@ -221,9 +260,7 @@ function showDeleteModal(id) {
     const myModal = new bootstrap.Modal(document.getElementById('deleteModal'));
     myModal.show();
 }
-</script>
 
-<script>
 function showDeleteModal(id) {
     // 1. Get the delete button inside the modal
     const deleteBtn = document.getElementById('confirmDeleteBtn');
@@ -235,7 +272,49 @@ function showDeleteModal(id) {
     const myModal = new bootstrap.Modal(document.getElementById('deleteModal'));
     myModal.show();
 }
+
+function viewAssetTags(assetId, assetName) {
+    document.getElementById('tagModalTitle').innerText = "Serials: " + assetName;
+    document.getElementById('add_tag_asset_id').value = assetId; // Set the ID for the form
+    
+    loadTags(assetId);
+    
+    var tagModal = new bootstrap.Modal(document.getElementById('assetTagModal'));
+    tagModal.show();
+}
+
+function loadTags(assetId) {
+    fetch(`actions/get_asset_tags.php?asset_id=${assetId}`)
+        .then(res => res.text())
+        .then(data => {
+            document.getElementById('tagListBody').innerHTML = data;
+        });
+}
+
+// Handle the "Add Tag" form submission via AJAX
+document.getElementById('addTagForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const assetId = formData.get('asset_id');
+
+    fetch('actions/add_asset_tag.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            this.reset(); // Clear the input
+            loadTags(assetId); // Refresh the list automatically
+        } else {
+            alert("Error: " + data.message);
+        }
+    });
+});
+
 </script>
+
+
 
 </body>
 </html>
