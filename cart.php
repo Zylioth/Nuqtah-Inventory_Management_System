@@ -100,7 +100,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </div>
                                 </td>
                                 <td class="text-end">
-                                    <a href="actions/remove_from_cart.php?id=<?php echo $id; ?>" class="text-danger"><i class="bi bi-trash"></i></a>
+                                    <a href="actions/remove_from_cart.php?id=<?php echo $id; ?>" class="text-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </a>                                
                                 </td>
                             </tr>
                         <?php endforeach; ?>
