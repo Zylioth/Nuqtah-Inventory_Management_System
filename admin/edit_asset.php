@@ -33,15 +33,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $current_stock = $_POST['current_stock'];
     $status = ($current_stock > 0) ? 'Available' : 'Out of Stock';
     
-    $image_name = $asset['asset_image']; // Default to old image
+    // Keep a reference to the old image from the database
+    $old_image_name = $asset['asset_image']; 
+    $image_name = $old_image_name; // Default to old image
 
     if (isset($_FILES['asset_image']) && $_FILES['asset_image']['error'] == 0) {
         $target_dir = "../assets/upload/";
         $file_ext = pathinfo($_FILES["asset_image"]["name"], PATHINFO_EXTENSION);
-        $image_name = time() . "_" . preg_replace("/[^a-zA-Z0-9.]/", "_", $name) . "." . $file_ext;
-        move_uploaded_file($_FILES["asset_image"]["tmp_name"], $target_dir . $image_name);
         
-        // Optional: Delete old image file here if it exists
+        // Generate new name
+        $new_image_name = time() . "_" . preg_replace("/[^a-zA-Z0-9.]/", "_", $name) . "." . $file_ext;
+        
+        if (move_uploaded_file($_FILES["asset_image"]["tmp_name"], $target_dir . $new_image_name)) {
+            $image_name = $new_image_name; // Set the new name for the database
+            
+            // --- CLEANUP LOGIC START ---
+            // If there was an old image and it's different from the new one
+            if (!empty($old_image_name) && $old_image_name !== $new_image_name) {
+                $old_file_path = $target_dir . $old_image_name;
+                
+                // Physically delete the old file if it exists on the server
+                if (file_exists($old_file_path)) {
+                    unlink($old_file_path);
+                }
+            }
+            // --- CLEANUP LOGIC END ---
+        }
     }
 
     try {
@@ -49,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt = $pdo->prepare($sql);
         if ($stmt->execute([$name, $category, $total_stock, $current_stock, $status, $image_name, $asset_id])) {
             $message = "success";
-            // Refresh local data
+            // Refresh local data for the preview
             $asset['asset_name'] = $name;
             $asset['category'] = $category;
             $asset['total_stock'] = $total_stock;
