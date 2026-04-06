@@ -227,6 +227,10 @@ $assets = $stmt->fetchAll();
                         $icon = 'bi-exclamation-octagon-fill';
                         $color = 'text-danger';
                         $msg = "Your request for <strong>" . htmlspecialchars($latest_request['asset_name']) . "</strong> was <strong>Rejected</strong>.";
+                    } elseif ($status == 'Returned') { 
+                        $icon = 'bi-arrow-left-right';
+                        $color = 'text-info';
+                        $msg = "The item <strong>" . htmlspecialchars($latest_request['asset_name']) . "</strong> has been successfully <strong>Returned</strong>. Thank you!";
                     }
                 ?>
                 

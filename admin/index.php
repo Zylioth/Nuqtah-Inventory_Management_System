@@ -176,7 +176,7 @@ $pending_list = $pdo->query($query)->fetchAll();
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
                     <h5 class="fw-bold mb-0">Recent Borrowing Requests</h5>
-                    <a href="borrowing_requests.php" class="text-teal small text-decoration-none">View All</a>
+                    <a href="view_requests.php" class="text-teal small text-decoration-none">View All</a>
                 </div>
                 <div class="table-responsive px-3 pb-3">
                     <table class="table align-middle">

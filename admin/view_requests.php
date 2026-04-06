@@ -55,6 +55,34 @@ $requests = $stmt->fetchAll();
 <?php include 'includes/sidebar.php'; ?>
 
 <div class="main-content">
+
+<!-- adds alert like confirmation to users when issueing items/assets -->
+    <?php if (isset($_GET['msg'])): ?>
+        <div class="alert alert-dismissible fade show border-0 shadow-sm rounded-3 
+            <?php 
+                if ($_GET['msg'] == 'issued') echo 'alert-success';
+                elseif ($_GET['msg'] == 'returned') echo 'alert-info';
+                elseif ($_GET['msg'] == 'error') echo 'alert-danger';
+                else echo 'alert-primary';
+            ?>" role="alert">
+            
+            <i class="bi <?php 
+                if ($_GET['msg'] == 'issued') echo 'bi-check-circle-fill';
+                elseif ($_GET['msg'] == 'returned') echo 'bi-arrow-left-right';
+                else echo 'bi-exclamation-triangle-fill';
+            ?> me-2"></i>
+
+            <strong>
+                <?php 
+                    if ($_GET['msg'] == 'issued') echo 'Item Issued Successfully!';
+                    elseif ($_GET['msg'] == 'returned') echo 'Item Returned & Restocked!';
+                    elseif ($_GET['msg'] == 'error') echo 'Something went wrong. Please try again.';
+                ?>
+            </strong>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+
     <div class="mb-4">
         <h2 class="fw-bold">Borrowing Requests</h2>
         <p class="text-muted">Review and manage equipment loan applications for ITQSHHB.</p>
