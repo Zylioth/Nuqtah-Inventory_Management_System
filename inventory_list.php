@@ -112,10 +112,10 @@ $assets = $stmt->fetchAll();
             <?php 
                 // 1. Image Logic
                 $placeholder = "assets/img/no_image_available.jpg";
-                $check_path = __DIR__ . "/assets/img/" . $row['asset_image'];
+                $check_path = __DIR__ . "/assets/upload/" . $row['asset_image'];
 
                 if (!empty($row['asset_image']) && file_exists($check_path)) {
-                    $image_path = "assets/img/" . $row['asset_image'];
+                    $image_path = "assets/upload/" . $row['asset_image'];
                 } else {
                     $image_path = $placeholder;
                 }

@@ -16,7 +16,7 @@ if ($id) {
         $asset = $stmt->fetch();
 
         if ($asset && !empty($asset['asset_image'])) {
-            $file_path = "../assets/img/" . $asset['asset_image'];
+            $file_path = "../assets/upload/" . $asset['asset_image'];
             // 2. Check if file exists on the server, then delete it
             if (file_exists($file_path)) {
                 unlink($file_path);

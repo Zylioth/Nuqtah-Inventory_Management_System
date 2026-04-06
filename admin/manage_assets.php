@@ -150,7 +150,7 @@ $low_stock_threshold = 5;
                                 $badge_class = "bg-success text-white";
                             }
 
-                            $img = !empty($row['asset_image']) ? "../assets/img/" . $row['asset_image'] : "../assets/img/no_image_available.jpg";
+                            $img = !empty($row['asset_image']) ? "../assets/upload/" . $row['asset_image'] : "../assets/img/no_image_available.jpg";
                         ?>
                         <tr>
                             <td class="ps-4">

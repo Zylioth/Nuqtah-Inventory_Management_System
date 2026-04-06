@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $image_name = $asset['asset_image']; // Default to old image
 
     if (isset($_FILES['asset_image']) && $_FILES['asset_image']['error'] == 0) {
-        $target_dir = "../assets/img/";
+        $target_dir = "../assets/upload/";
         $file_ext = pathinfo($_FILES["asset_image"]["name"], PATHINFO_EXTENSION);
         $image_name = time() . "_" . preg_replace("/[^a-zA-Z0-9.]/", "_", $name) . "." . $file_ext;
         move_uploaded_file($_FILES["asset_image"]["tmp_name"], $target_dir . $image_name);
@@ -134,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <label class="form-label fw-bold">Update Asset Image</label>
                             <div class="d-flex align-items-center bg-light p-3 rounded-3">
                                 <?php if($asset['asset_image']): ?>
-                                    <img src="../assets/img/<?php echo $asset['asset_image']; ?>" class="current-img-preview me-3 border">
+                                    <img src="../assets/upload/<?php echo $asset['asset_image']; ?>" class="current-img-preview me-3 border">
                                 <?php endif; ?>
                                 <input type="file" name="asset_image" class="form-control" accept="image/*">
                             </div>

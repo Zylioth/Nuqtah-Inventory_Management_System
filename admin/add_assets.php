@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     $image_name = "";
     if (isset($_FILES['asset_image']) && $_FILES['asset_image']['error'] == 0) {
-        $target_dir = "../assets/img/";
+        $target_dir = "../assets/upload/";
         if (!is_dir($target_dir)) {
             mkdir($target_dir, 0777, true);
         }
