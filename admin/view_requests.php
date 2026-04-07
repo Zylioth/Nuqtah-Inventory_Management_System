@@ -7,11 +7,12 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
     exit();
 }
 
-// Fetch requests with User and Asset details - r.* includes the assigned_tag column
-$query = "SELECT r.*, u.full_name, a.asset_name, a.category 
+// Fetch requests with User, Asset, and specific Tag details
+$query = "SELECT r.*, u.full_name, a.asset_name, a.category, t.unique_tag as assigned_tag_name 
           FROM borrowing_requests r
           JOIN users u ON r.user_id = u.user_id
           JOIN assets a ON r.asset_id = a.asset_id
+          LEFT JOIN asset_tags t ON r.tag_id = t.tag_id
           ORDER BY r.request_date DESC";
 $stmt = $pdo->query($query);
 $requests = $stmt->fetchAll();
@@ -41,6 +42,8 @@ $requests = $stmt->fetchAll();
         }
 
         .bg-teal { background-color: #00796B !important; }
+        /* Added custom purple for consumables */
+        .bg-purple { background-color: #6f42c1 !important; }
         .modal-header .modal-title { color: #ffffff !important; }
         .main-content { margin-left: var(--sidebar-width); padding: 30px; }
         .status-badge { font-size: 0.85rem; padding: 6px 12px; }
@@ -56,7 +59,6 @@ $requests = $stmt->fetchAll();
 
 <div class="main-content">
 
-<!-- adds alert like confirmation to users when issueing items/assets -->
     <?php if (isset($_GET['msg'])): ?>
         <div class="alert alert-dismissible fade show border-0 shadow-sm rounded-3 
             <?php 
@@ -105,11 +107,14 @@ $requests = $stmt->fetchAll();
                     <?php foreach ($requests as $row): ?>
                         <?php 
                             $status = $row['status'];
-                            $badge_class = "bg-secondary";
+                            $badge_class = "bg-secondary text-white";
+                            
                             if ($status == 'Pending') $badge_class = "bg-warning text-dark";
-                            elseif ($status == 'Approved' || $status == 'On Loan') $badge_class = "bg-success";
-                            elseif ($status == 'Rejected') $badge_class = "bg-danger";
+                            elseif ($status == 'Approved') $badge_class = "bg-primary text-white";
+                            elseif ($status == 'On Loan') $badge_class = "bg-success text-white";
+                            elseif ($status == 'Issued') $badge_class = "bg-purple text-white"; 
                             elseif ($status == 'Returned') $badge_class = "bg-info text-dark";
+                            elseif ($status == 'Rejected') $badge_class = "bg-danger text-white";
                         ?>
                         <tr>
                             <td class="ps-4">
@@ -118,13 +123,13 @@ $requests = $stmt->fetchAll();
                             </td>
                             <td>
                                 <div class="fw-bold"><?php echo htmlspecialchars($row['asset_name']); ?></div>
-                                <span class="badge bg-light text-dark border"><?php echo $row['category']; ?></span>
+                                <span class="badge bg-light text-dark border"><?php echo htmlspecialchars($row['category']); ?></span>
                             </td>
                             
                             <td>
-                                <?php if (!empty($row['assigned_tag'])): ?>
+                                <?php if (!empty($row['assigned_tag_name'])): ?>
                                     <span class="badge bg-teal text-white shadow-sm" style="font-family: monospace;">
-                                        <i class="bi bi-tag-fill me-1"></i><?php echo htmlspecialchars($row['assigned_tag']); ?>
+                                        <i class="bi bi-tag-fill me-1"></i><?php echo htmlspecialchars($row['assigned_tag_name']); ?>
                                     </span>
                                 <?php else: ?>
                                     <span class="text-muted small">Not Assigned</span>
@@ -139,7 +144,7 @@ $requests = $stmt->fetchAll();
                             <td><?php echo date('d M Y', strtotime($row['request_date'])); ?></td>
                             <td>
                                 <span class="badge <?php echo $badge_class; ?> rounded-pill status-badge">
-                                    <?php echo $status; ?>
+                                    <?php echo htmlspecialchars($status); ?>
                                 </span>
                             </td>
 
@@ -159,8 +164,11 @@ $requests = $stmt->fetchAll();
                                         <i class="bi bi-arrow-left-right me-1"></i>Mark Returned
                                     </button>
                                     
+                                <?php elseif ($status == 'Issued'): ?>
+                                    <span class="text-muted small"><i class="bi bi-check2-all me-1"></i>Finalized</span>
+                                
                                 <?php else: ?>
-                                    <span class="text-muted small italic"><?php echo $status; ?></span>
+                                    <span class="text-muted small italic"><?php echo htmlspecialchars($status); ?></span>
                                 <?php endif; ?>
                             </td>
                         </tr>
@@ -233,13 +241,33 @@ $requests = $stmt->fetchAll();
             <form action="actions/process_return.php" method="POST">
                 <div class="modal-body p-4">
                     <input type="hidden" name="request_id" id="return_request_id">
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" required>
-                        <label class="form-check-label">Item returned in good condition</label>
+                    
+                    <div class="mb-4 p-3 bg-light rounded-3 border">
+                        <label class="form-label small fw-bold text-dark">Asset Return Status</label>
+                        <select class="form-select border-dark shadow-sm" name="return_status" required>
+                            <option value="Available" selected>✅ Good Condition (Back to Stock)</option>
+                            <option value="Maintenance">🛠️ Under Maintenance (Needs Repair)</option>
+                            <option value="Damaged">❌ Damaged / Broken (Remove from Stock)</option>
+                        </select>
+                        <div class="form-text" style="font-size: 0.75rem;">
+                            This will update the physical tag status in the system.
+                        </div>
                     </div>
-                    <textarea class="form-control" name="return_note" rows="2" placeholder="Return notes..."></textarea>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="confirmInspect" required>
+                        <label class="form-check-label small" for="confirmInspect">
+                            I have verified the physical condition of this item.
+                        </label>
+                    </div>
+
+                    <div class="mt-3">
+                        <label class="form-label small fw-bold">Return Notes / Observations</label>
+                        <textarea class="form-control rounded-3" name="return_note" rows="2" placeholder="e.g. Scratches on lid, missing HDMI cable..."></textarea>
+                    </div>
                 </div>
-                <div class="modal-footer border-0">
+                <div class="modal-footer border-0 p-3">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-dark rounded-pill px-4">Confirm Return</button>
                 </div>
             </form>

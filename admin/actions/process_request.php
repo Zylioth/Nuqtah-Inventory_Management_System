@@ -2,43 +2,50 @@
 session_start();
 include '../../includes/db_connect.php';
 
-// Security: Ensure only Admins can process requests
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
     header("Location: ../../login.php");
     exit();
 }
 
-// Support both 'status' (from Dashboard) and 'action' (from View Requests)
 $request_id = $_GET['id'] ?? null;
 $action = $_GET['action'] ?? $_GET['status'] ?? null;
-$note = $_GET['note'] ?? ''; // Rejection reason from the JS prompt
+$note = $_GET['note'] ?? '';
 
 if ($request_id && $action) {
     try {
         $pdo->beginTransaction();
 
-        // 1. Convert action names to match Database Status
         $new_status = (strtolower($action) === 'approve' || $action === 'Approved') ? 'Approved' : 'Rejected';
 
-        // 2. Fetch the request details
-        $stmt = $pdo->prepare("SELECT asset_id, quantity, status FROM borrowing_requests WHERE request_id = ?");
+        $stmt = $pdo->prepare("SELECT status, quantity FROM borrowing_requests WHERE request_id = ?");
         $stmt->execute([$request_id]);
         $request = $stmt->fetch();
 
-        // Only process if the request is still 'Pending' to prevent double-deducting stock
         if ($request && $request['status'] === 'Pending') {
             
             if ($new_status === 'Approved') {
-                // 3. Subtract the requested quantity from the assets table
-                $updateStock = $pdo->prepare("UPDATE assets SET current_stock = current_stock - ? WHERE asset_id = ?");
-                $updateStock->execute([$request['quantity'], $request['asset_id']]);
-                
-                // 4. Update status to Approved
-                $updateStatus = $pdo->prepare("UPDATE borrowing_requests SET status = 'Approved' WHERE request_id = ?");
-                $updateStatus->execute([$request_id]);
+                $qty = (int)$request['quantity'];
+
+                if ($qty > 1) {
+                    // Split logic: Create (qty - 1) new rows
+                    // Using ONLY the columns we've confirmed: user_id, asset_id, quantity, status, request_date
+                    for ($i = 1; $i < $qty; $i++) {
+                        $copyStmt = $pdo->prepare("INSERT INTO borrowing_requests 
+                            (user_id, asset_id, quantity, status, request_date) 
+                            SELECT user_id, asset_id, 1, 'Approved', request_date 
+                            FROM borrowing_requests WHERE request_id = ?");
+                        $copyStmt->execute([$request_id]);
+                    }
+                    
+                    // Update the original row to qty 1 and status Approved
+                    $updateOrig = $pdo->prepare("UPDATE borrowing_requests SET status = 'Approved', quantity = 1 WHERE request_id = ?");
+                    $updateOrig->execute([$request_id]);
+                } else {
+                    $updateStatus = $pdo->prepare("UPDATE borrowing_requests SET status = 'Approved' WHERE request_id = ?");
+                    $updateStatus->execute([$request_id]);
+                }
             } 
             else {
-                // 5. Update status to Rejected and save the admin_note
                 $updateStatus = $pdo->prepare("UPDATE borrowing_requests SET status = 'Rejected', admin_note = ? WHERE request_id = ?");
                 $updateStatus->execute([$note, $request_id]);
             }
@@ -46,12 +53,12 @@ if ($request_id && $action) {
             $pdo->commit();
             header("Location: ../view_requests.php?msg=success");
         } else {
-            // Already processed
-            $pdo->rollBack();
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
             header("Location: ../view_requests.php?msg=already_processed");
         }
     } catch (Exception $e) {
-        $pdo->rollBack();
+        if ($pdo->inTransaction()) { $pdo->rollBack(); }
+        // Back to redirecting instead of die() once it's fixed!
         header("Location: ../view_requests.php?msg=error");
     }
 } else {
