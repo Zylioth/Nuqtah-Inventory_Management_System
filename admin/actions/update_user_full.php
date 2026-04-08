@@ -33,12 +33,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $old_status = $checkStmt->fetchColumn();
 
         // 2. Perform the Update
+        // Clear token when Admin manually activates
         $sql = "UPDATE users SET 
                 full_name = ?, 
                 username = ?, 
                 email = ?, 
                 role = ?, 
-                account_status = ? 
+                account_status = ?,
+                activation_token = NULL 
                 WHERE user_id = ?";
                 
         $stmt = $pdo->prepare($sql);
@@ -52,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <p>Your account for <b>Nuqtah</b> has been approved by the ICT Department.</p>
                 <p>You can now log in to the system to view IT assets and manage your borrowings.</p>
                 <br>
-                <a href='http://localhost/nuqtah/login.php' style='display:inline-block; background: #00796B; color: white; padding: 12px 25px; text-decoration: none; border-radius: 30px; font-weight: bold;'>Login to Nuqtah</a>
+                <a href='http://localhost/Nuqtah_IT/login.php' style='display:inline-block; background: #00796B; color: white; padding: 12px 25px; text-decoration: none; border-radius: 30px; font-weight: bold;'>Login to Nuqtah</a>
                 <br><p style='color: #888; font-size: 11px; margin-top: 20px;'>If the button doesn't work, copy this link: http://localhost/nuqtah/login.php</p>";
             
             sendNuqtahEmail($email, $full_name, $subject, $message);
