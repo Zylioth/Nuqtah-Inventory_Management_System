@@ -46,8 +46,13 @@
             </a>
         </li>
         <li>
-            <a href="users.php" class="nav-link <?php echo ($current_page == 'users.php') ? 'active' : ''; ?>">
+            <a href="manage_users.php" class="nav-link <?php echo ($current_page == 'manage_users.php') ? 'active' : ''; ?>">
                 <i class="bi bi-people me-2"></i> Users
+            </a>
+        </li>
+        <li>
+            <a href="report.php" class="nav-link <?php echo ($current_page == 'report.php') ? 'active' : ''; ?>">
+                <i class="bi bi-bar-chart-line-fill me-2"></i> Reports
             </a>
         </li>
     </ul>
