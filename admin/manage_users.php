@@ -56,7 +56,8 @@ $users = $stmt->fetchAll();
                 <i class="bi <?php echo ($_GET['msg'] == 'success' || $_GET['msg'] == 'deleted') ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'; ?> fs-5 me-3"></i>
                 <div>
                     <?php 
-                        if ($_GET['msg'] == 'success') echo "<strong>Success!</strong> Action completed successfully.";
+                        // Example logic for your alert box
+i                       f($_GET['msg'] == 'success') echo "User updated and activation email sent successfully!";
                         elseif ($_GET['msg'] == 'exists') echo "<strong>Registration Error!</strong> That Username or ID already exists.";
                         elseif ($_GET['msg'] == 'self_demote_error') echo "<strong>Security Alert!</strong> You cannot change your own Admin status.";
                         elseif ($_GET['msg'] == 'self_delete_error') echo "<strong>Action Denied!</strong> You cannot delete your own account.";
