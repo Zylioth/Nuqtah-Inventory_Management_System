@@ -1,6 +1,8 @@
 <?php
 session_start();
 include '../../includes/db_connect.php';
+// Include the mail helper
+include_once '../../includes/mail_helper.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
     header("Location: ../../login.php");
@@ -17,7 +19,14 @@ if ($request_id && $action) {
 
         $new_status = (strtolower($action) === 'approve' || $action === 'Approved') ? 'Approved' : 'Rejected';
 
-        $stmt = $pdo->prepare("SELECT status, quantity FROM borrowing_requests WHERE request_id = ?");
+        // 1. UPDATED QUERY: Fetch user and asset details along with the request
+        $stmt = $pdo->prepare("
+            SELECT br.status, br.quantity, u.email, u.full_name, a.asset_name 
+            FROM borrowing_requests br
+            JOIN users u ON br.user_id = u.user_id
+            JOIN assets a ON br.asset_id = a.asset_id
+            WHERE br.request_id = ?
+        ");
         $stmt->execute([$request_id]);
         $request = $stmt->fetch();
 
@@ -27,8 +36,6 @@ if ($request_id && $action) {
                 $qty = (int)$request['quantity'];
 
                 if ($qty > 1) {
-                    // Split logic: Create (qty - 1) new rows
-                    // Using ONLY the columns we've confirmed: user_id, asset_id, quantity, status, request_date
                     for ($i = 1; $i < $qty; $i++) {
                         $copyStmt = $pdo->prepare("INSERT INTO borrowing_requests 
                             (user_id, asset_id, quantity, status, request_date) 
@@ -36,18 +43,36 @@ if ($request_id && $action) {
                             FROM borrowing_requests WHERE request_id = ?");
                         $copyStmt->execute([$request_id]);
                     }
-                    
-                    // Update the original row to qty 1 and status Approved
                     $updateOrig = $pdo->prepare("UPDATE borrowing_requests SET status = 'Approved', quantity = 1 WHERE request_id = ?");
                     $updateOrig->execute([$request_id]);
                 } else {
                     $updateStatus = $pdo->prepare("UPDATE borrowing_requests SET status = 'Approved' WHERE request_id = ?");
                     $updateStatus->execute([$request_id]);
                 }
-            } 
-            else {
+
+                // --- EMAIL FOR APPROVAL ---
+                $subject = "Request Approved - Nuqtah Inventory";
+                $message = "
+                    <h3>Hello {$request['full_name']}!</h3>
+                    <p>Your request for <b>{$request['asset_name']}</b> has been <b>Approved</b>.</p>
+                    <p>Please proceed to the ICT Department to collect your item.</p>
+                    <p><i>Note: Please bring your ID for verification.</i></p>";
+                
+                sendNuqtahEmail($request['email'], $request['full_name'], $subject, $message);
+
+            } else {
                 $updateStatus = $pdo->prepare("UPDATE borrowing_requests SET status = 'Rejected', admin_note = ? WHERE request_id = ?");
                 $updateStatus->execute([$note, $request_id]);
+
+                // --- EMAIL FOR REJECTION ---
+                $subject = "Update on Your Borrowing Request";
+                $message = "
+                    <h3>Hello {$request['full_name']},</h3>
+                    <p>We regret to inform you that your request for <b>{$request['asset_name']}</b> could not be approved at this time.</p>
+                    <p><b>Reason:</b> " . (!empty($note) ? htmlspecialchars($note) : "No specific reason provided.") . "</p>
+                    <p>Please contact the ICT Department if you have further questions.</p>";
+                
+                sendNuqtahEmail($request['email'], $request['full_name'], $subject, $message);
             }
 
             $pdo->commit();
@@ -58,7 +83,6 @@ if ($request_id && $action) {
         }
     } catch (Exception $e) {
         if ($pdo->inTransaction()) { $pdo->rollBack(); }
-        // Back to redirecting instead of die() once it's fixed!
         header("Location: ../view_requests.php?msg=error");
     }
 } else {
