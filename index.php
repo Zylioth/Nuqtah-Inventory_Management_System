@@ -35,15 +35,26 @@ session_start();
 </nav>
 
 <header class="hero-section text-center text-white d-flex align-items-center">
+    
+    <video autoplay muted loop playsinline class="hero-video">
+        <source src="assets/video/Front_slowfront_boomerang.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <div class="hero-overlay"></div>
+
     <div class="container px-5">
         <h1 class="display-3 fw-bold">Welcome to Nuqtah</h1>
-        <p class="lead mb-4">An IT Inventory Management System build for ITQSHHB</p>
+        <p class="lead mb-4">An IT Inventory Management System built for ITQSHHB</p>
         <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-            <a href="login.php" class="btn btn-outline-light btn-lg px-4">Login</a>
+            <?php if (!isset($_SESSION['user_id'])): ?>
+                <a href="login.php" class="btn btn-outline-light btn-lg px-4 rounded-pill">Login to Access Inventory</a>
+            <?php else: ?>
+                <a href="inventory_list.php" class="btn btn-outline-light btn-lg px-4 rounded-pill">View Inventory</a>
+            <?php endif; ?>
         </div>
     </div>
 </header>
-
 <section class="container my-5">
     <div class="row g-4 text-center">
         <div class="col-md-4">

@@ -85,14 +85,38 @@ section.container {
     padding-bottom: 3rem;
 }
 
-/* Glassmorphism for the Hero Text container */
+/* Update this in your assets/css/styles.css */
 .hero-section {
-    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('../img/clean_top2.png');
-    background-size: cover;
-    background-position: center;
-    min-height: 95vh; /* Makes it feel more like a modern 'Stage' */
+    position: relative;
+    overflow: hidden; 
+    min-height: 95vh;
+    background: none; /* Removed the static image and gradient */
 }
 
+/* Ensures the video fills the container perfectly */
+.hero-video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    z-index: -2; /* Sits at the very back */
+    transform: translateX(-50%) translateY(-50%);
+    object-fit: cover;
+}
+
+/* This replaces the CSS linear-gradient darken effect */
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Adjust 0.6 to make it darker or lighter */
+    z-index: -1; /* Sits between the video and the text */
+}
 /* Modern Card Style */
 .card {
     border-radius: 15px !important; /* Softer corners are more modern */
