@@ -73,6 +73,15 @@ session_start();
                     <small id="strength-text" class="text-muted small ms-1">Enter a password</small>
                 </div>
 
+                <div class="mb-3">
+                    <label class="form-label fw-bold">I am a...</label>
+                    <select name="role" class="form-select rounded-3" required>
+                        <option value="" selected disabled>Select your role</option>
+                        <option value="Student">Student</option>
+                        <option value="Staff">Staff</option>
+                    </select>
+                </div>
+
                 <div class="mb-4 d-flex justify-content-center">
                     <div class="g-recaptcha" data-sitekey="6LdkWG8sAAAAAORds7qER4QXcMQogo5eWaRuoFfX"></div>
                  </div> 

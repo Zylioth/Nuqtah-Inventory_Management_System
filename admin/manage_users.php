@@ -57,7 +57,7 @@ $users = $stmt->fetchAll();
                 <div>
                     <?php 
                         // Example logic for your alert box
-i                       f($_GET['msg'] == 'success') echo "User updated and activation email sent successfully!";
+                        if($_GET['msg'] == 'success') echo "User updated and activation email sent successfully!";
                         elseif ($_GET['msg'] == 'exists') echo "<strong>Registration Error!</strong> That Username or ID already exists.";
                         elseif ($_GET['msg'] == 'self_demote_error') echo "<strong>Security Alert!</strong> You cannot change your own Admin status.";
                         elseif ($_GET['msg'] == 'self_delete_error') echo "<strong>Action Denied!</strong> You cannot delete your own account.";

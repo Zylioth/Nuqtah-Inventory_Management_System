@@ -24,7 +24,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['signup_btn'])) {
     $username  = $_POST['username'];
     $email     = $_POST['email'];
     $password  = password_hash($_POST['password'], PASSWORD_DEFAULT);
-    $role      = 'Staff'; 
+    
+    // --- UPDATED ROLE LOGIC START ---
+    $role = $_POST['role']; 
+    
+    // Security: Validate that the role is strictly Student or Staff
+    $allowed_roles = ['Student', 'Staff'];
+    if (!in_array($role, $allowed_roles)) {
+        header("Location: ../signup.php?error=invalid_role");
+        exit();
+    }
+    // --- UPDATED ROLE LOGIC END ---
+
     $status    = 'Pending';
 
     // 2. Generate a secure random activation token
@@ -43,7 +54,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['signup_btn'])) {
         $subject = "Verify Your Nuqtah Account";
         $message = "
             <h3>Welcome to Nuqtah, $full_name!</h3>
-            <p>Thank you for registering. Before the ICT department can approve your access, please verify your email address by clicking the button below:</p>
+            <p>Thank you for registering as a <b>$role</b>. Before the ICT department can approve your access, please verify your email address by clicking the button below:</p>
             <br>
             <a href='$activateLink' style='display:inline-block; background: #00796B; color: white; padding: 12px 25px; text-decoration: none; border-radius: 30px; font-weight: bold;'>Verify Email Address</a>
             <br>
@@ -63,4 +74,3 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['signup_btn'])) {
         exit();
     }
 }
-?>
