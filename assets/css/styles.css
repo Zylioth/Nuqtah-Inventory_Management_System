@@ -87,10 +87,10 @@ section.container {
 
 /* Glassmorphism for the Hero Text container */
 .hero-section {
-    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('../img/Tahfiz_front_B.png');
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('../img/clean_top2.png');
     background-size: cover;
     background-position: center;
-    min-height: 80vh; /* Makes it feel more like a modern 'Stage' */
+    min-height: 95vh; /* Makes it feel more like a modern 'Stage' */
 }
 
 /* Modern Card Style */
