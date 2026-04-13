@@ -102,8 +102,12 @@ $low_stock_threshold = 5;
                 <div class="col-md-8">
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
-                        <input type="text" id="adminSearch" class="form-control border-start-0 ps-0" placeholder="Search by name, category or ID...">
-                    </div>
+                       <!-- Search features -->
+                        <input type="text" id="adminSearch" class="form-control border-start-0 ps-0" 
+                            placeholder="Search by name, category or ID..." 
+                            onkeyup="filterAssets()">     
+
+                </div>
                 </div>
                 <div class="col-md-4">
                     <select class="form-select">
@@ -310,6 +314,41 @@ document.getElementById('addTagForm').addEventListener('submit', function(e) {
             alert("Error: " + data.message);
         }
     });
+});
+
+function filterAssets() {
+    const input = document.getElementById("adminSearch");
+    const filter = input.value.toLowerCase();
+    const table = document.querySelector("table tbody");
+    const rows = table.getElementsByTagName("tr");
+
+    for (let i = 0; i < rows.length; i++) {
+        // This scans Name, ID, and Category columns specifically
+        const rowText = rows[i].textContent.toLowerCase();
+        
+        if (rowText.includes(filter)) {
+            rows[i].style.display = "";
+        } else {
+            rows[i].style.display = "none";
+        }
+    }
+}
+
+// Optional: Link the Category Dropdown to the same filter
+document.querySelector('.form-select').addEventListener('change', function() {
+    const category = this.value.toLowerCase();
+    const table = document.querySelector("table tbody");
+    const rows = table.getElementsByTagName("tr");
+
+    for (let i = 0; i < rows.length; i++) {
+        const rowCategory = rows[i].querySelector('td:nth-child(3)').textContent.toLowerCase();
+        
+        if (category === "all categories" || rowCategory.includes(category)) {
+            rows[i].style.display = "";
+        } else {
+            rows[i].style.display = "none";
+        }
+    }
 });
 
 </script>

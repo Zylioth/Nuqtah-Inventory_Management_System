@@ -90,6 +90,20 @@ $requests = $stmt->fetchAll();
         <p class="text-muted">Review and manage equipment loan applications for ITQSHHB.</p>
     </div>
 
+<!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-md-5">
+            <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white border-end-0">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
+                <input type="text" id="requestSearch" class="form-control border-start-0 ps-0" 
+                    placeholder="Search by requester, asset, or status..." onkeyup="filterRequests()">
+            </div>
+        </div>
+    </div>
+
+
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
         <div class="table-responsive">
             <table class="table align-middle mb-0">
@@ -304,6 +318,26 @@ function processReturn(id) {
     var returnModal = new bootstrap.Modal(document.getElementById('returnModal'));
     returnModal.show();
 }
+
+// Search functions
+function filterRequests() {
+    const input = document.getElementById("requestSearch");
+    const filter = input.value.toLowerCase();
+    const table = document.querySelector("table tbody");
+    const rows = table.getElementsByTagName("tr");
+
+    for (let i = 0; i < rows.length; i++) {
+        // We get the combined text of the whole row to search everything at once
+        const rowText = rows[i].textContent.toLowerCase();
+        
+        if (rowText.includes(filter)) {
+            rows[i].style.display = ""; // Show row
+        } else {
+            rows[i].style.display = "none"; // Hide row
+        }
+    }
+}
+
 </script>
 
 </body>

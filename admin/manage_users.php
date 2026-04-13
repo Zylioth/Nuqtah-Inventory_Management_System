@@ -70,6 +70,18 @@ $users = $stmt->fetchAll();
         </div>
     <?php endif; ?>
 
+<!-- Seacrh Features -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                <input type="text" id="userSearch" class="form-control border-start-0 ps-0" 
+                    placeholder="Search by name" onkeyup="filterUsers()">
+            </div>
+        </div>
+    </div>
+
+
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
         <div class="table-responsive">
             <table class="table align-middle mb-0">
@@ -274,6 +286,25 @@ function confirmDelete(user) {
     document.getElementById('delete_confirm_btn').href = `actions/delete_user.php?id=${user.id}`;
     new bootstrap.Modal(document.getElementById('deleteConfirmModal')).show();
 }
+
+function filterUsers() {
+    const input = document.getElementById("userSearch");
+    const filter = input.value.toLowerCase();
+    const table = document.querySelector("table tbody");
+    const rows = table.getElementsByTagName("tr");
+
+    for (let i = 0; i < rows.length; i++) {
+        // This gets all text content in the row (Name, Username, Role, etc.)
+        const rowText = rows[i].textContent.toLowerCase();
+        
+        if (rowText.includes(filter)) {
+            rows[i].style.display = "";
+        } else {
+            rows[i].style.display = "none";
+        }
+    }
+}
+
 </script>
 </body>
 </html>
