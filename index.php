@@ -13,6 +13,17 @@ session_start();
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 
+<style
+>/* Add this inside your <style> block */
+header img {
+    transition: transform 0.3s ease;
+}
+
+header img:hover {
+    transform: scale(1.05);
+}
+</style>
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: var(--brand-teal);">
     <div class="container">
@@ -34,27 +45,48 @@ session_start();
     </div>
 </nav>
 
-<header class="hero-section text-center text-white d-flex align-items-center">
+<!-- Hero section the first orng liat -->
+<header class="hero-section text-center text-white d-flex align-items-center justify-content-center" style="position: relative; overflow: hidden; height: 85vh;">
     
-    <video autoplay muted loop playsinline class="hero-video">
+    <video autoplay muted loop playsinline class="hero-video" style="position: absolute; top: 50%; left: 50%; min-width: 100%; min-height: 100%; width: auto; height: auto; z-index: -2; transform: translate(-50%, -50%); object-fit: cover;">
         <source src="assets/video/Front_slowfront_boomerang.mp4" type="video/mp4">
         Your browser does not support the video tag.
     </video>
 
-    <div class="hero-overlay"></div>
+    <div class="hero-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); z-index: -1;"></div>
 
-    <div class="container px-5">
-        <h1 class="display-3 fw-bold">Welcome to Nuqtah</h1>
-        <p class="lead mb-4">An IT Inventory Management System built for ITQSHHB</p>
+    <div class="container px-5" style="animation: fadeUp 1s ease-out forwards;">
+        
+            <!-- Both logo ITQSHHB and nuqtah -->
+        <div class="d-flex align-items-center justify-content-center mb-4">
+
+            <img src="assets/img/logoNuqtah_White.png" alt="Nuqtah Logo" style="height: 80px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));">   
+            
+            <div style="width: 2px; height: 80px; background: white; margin: 0 30px; opacity: 0.8; box-shadow: 0 0 10px rgba(0,0,0,0.3);"></div>
+            
+            <img src="assets/img/ITQSHHBLogo.png" alt="ITQSHHB Logo" style="height: 100px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));"> 
+        
+        </div>
+
+        <p class="lead mb-4 fw-light" style="text-shadow: 0 2px 8px rgba(0,0,0,0.8); font-size: 1.4rem; letter-spacing: 1px;">
+            An IT Inventory Management System built for ITQSHHB
+        </p>
+
         <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
             <?php if (!isset($_SESSION['user_id'])): ?>
-                <a href="login.php" class="btn btn-outline-light btn-lg px-4 rounded-pill">Login to Access Inventory</a>
+                <a href="login.php" class="btn btn-outline-light btn-lg px-5 rounded-pill shadow-sm" style="border-width: 2px; font-weight: 600; transition: all 0.3s ease;">
+                    Login to Access Inventory
+                </a>
             <?php else: ?>
-                <a href="inventory_list.php" class="btn btn-outline-light btn-lg px-4 rounded-pill">View Inventory</a>
+                <a href="inventory_list.php" class="btn btn-outline-light btn-lg px-5 rounded-pill shadow-sm" style="border-width: 2px; font-weight: 600; transition: all 0.3s ease;">
+                    View Inventory
+                </a>
             <?php endif; ?>
         </div>
     </div>
 </header>
+
+
 <section class="container my-5">
     <div class="row g-4 text-center">
         <div class="col-md-4">

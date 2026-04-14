@@ -85,7 +85,8 @@ section.container {
     padding-bottom: 3rem;
 }
 
-/* Update this in your assets/css/styles.css */
+
+/* index punya lading page hero section */
 .hero-section {
     position: relative;
     overflow: hidden; 
@@ -117,6 +118,19 @@ section.container {
     background-color: rgba(0, 0, 0, 0.6); /* Adjust 0.6 to make it darker or lighter */
     z-index: -1; /* Sits between the video and the text */
 }
+
+@keyframes fadeUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .btn-outline-light:hover {
+        background-color: white !important;
+        color: var(--brand-teal) !important;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.3) !important;
+    }
+
 /* Modern Card Style */
 .card {
     border-radius: 15px !important; /* Softer corners are more modern */
