@@ -265,18 +265,6 @@ function showDeleteModal(id) {
     myModal.show();
 }
 
-function showDeleteModal(id) {
-    // 1. Get the delete button inside the modal
-    const deleteBtn = document.getElementById('confirmDeleteBtn');
-    
-    // 2. Set the href to your delete_asset.php with the correct ID
-    deleteBtn.href = 'delete_asset.php?id=' + id;
-    
-    // 3. Show the modal using Bootstrap's JS API
-    const myModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-    myModal.show();
-}
-
 function viewAssetTags(assetId, assetName) {
     document.getElementById('tagModalTitle').innerText = "Serials: " + assetName;
     document.getElementById('add_tag_asset_id').value = assetId; // Set the ID for the form
