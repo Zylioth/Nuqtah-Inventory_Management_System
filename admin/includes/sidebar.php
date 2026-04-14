@@ -1,13 +1,70 @@
+<style>
+    :root { 
+        --sidebar-width: 260px; 
+        --nuqtah-teal: #00796B; 
+        --nuqtah-teal-hover: #004D40;
+    }
+
+    .sidebar { 
+        width: var(--sidebar-width); 
+        height: 100vh; 
+        position: fixed; 
+        top: 0; 
+        left: 0; 
+        background-color: #ffffff !important; 
+        border-right: 1px solid #eee; 
+        z-index: 1050; 
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .sidebar .nav-link { 
+        color: #555 !important; 
+        padding: 12px 20px; 
+        margin: 4px 12px; 
+        border-radius: 10px; 
+        transition: all 0.2s;
+        text-decoration: none !important;
+        display: flex;
+        align-items: center;
+    }
+
+    .sidebar .nav-link:hover { 
+        background-color: #f0f7f6 !important; 
+        color: var(--nuqtah-teal) !important; 
+    }
+
+    .sidebar .nav-link.active { 
+        background-color: var(--nuqtah-teal) !important; 
+        color: #ffffff !important; 
+        box-shadow: 0 4px 12px rgba(0, 121, 107, 0.2);
+    }
+
+    .sidebar .nav-link i {
+        margin-right: 12px;
+        font-size: 1.1rem;
+    }
+
+    @media (max-width: 991.98px) {
+        .sidebar { transform: translateX(-100%); }
+        .sidebar.active { transform: translateX(0); box-shadow: 10px 0 25px rgba(0,0,0,0.1); }
+    }
+
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 1040; 
+    }
+    .sidebar-overlay.active { display: block; }
+</style>
+
 <div class="sidebar d-flex flex-column p-3 shadow-sm bg-white">
     <div class="text-center mb-4 mt-2">
         <a href="index.php" class="text-decoration-none">
             <?php 
-                // This is the URL path the browser uses
                 $logo_path = "../assets/img/logoNuqtah.png";
-                
-                // This checks if the file exists relative to the admin folder 
-                // where index.php or manage_assets.php is running
-                if (file_exists("../assets/img/logoNuqtah.png")): 
+                if (file_exists($logo_path)): 
             ?>
                 <img src="<?php echo $logo_path; ?>" alt="Nuqtah Logo" style="max-width: 170px; height: auto;">
             <?php else: ?>
@@ -26,10 +83,7 @@
     </div>
     
     <ul class="nav nav-pills flex-column mb-auto">
-        <?php 
-            // Get current filename to determine active class
-            $current_page = basename($_SERVER['PHP_SELF']); 
-        ?>
+        <?php $current_page = basename($_SERVER['PHP_SELF']); ?>
         <li class="nav-item">
             <a href="index.php" class="nav-link <?php echo ($current_page == 'index.php') ? 'active' : ''; ?>">
                 <i class="bi bi-grid-1x2-fill me-2"></i> Dashboard
@@ -73,3 +127,27 @@
         </ul>
     </div>
 </div>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        if (menuToggle && sidebar && overlay) {
+            function toggleSidebar() {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            }
+
+            menuToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                toggleSidebar();
+            });
+
+            overlay.addEventListener('click', toggleSidebar);
+        }
+    });
+</script>
