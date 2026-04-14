@@ -17,21 +17,31 @@ $stmt = $pdo->prepare("SELECT * FROM assets WHERE asset_id IN ($placeholders)");
 $stmt->execute($cart_ids);
 $cart_items = $stmt->fetchAll();
 
+// Check if the cart contains only consumables
+$onlyConsumables = true;
+foreach ($cart_items as $item) {
+    if (strtolower($item['category']) !== 'consumables') {
+        $onlyConsumables = false;
+        break;
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user_id = $_SESSION['user_id'];
-    $user_name = $_SESSION['full_name']; // Make sure this is set in login
-    $user_email = $_SESSION['email'];     // Make sure this is set in login
-    $return_date = $_POST['return_date'];
+    $user_name = $_SESSION['full_name'];
+    $user_email = $_SESSION['email'];
+    // Capture return date from form, default to null if not provided
+    $form_return_date = !empty($_POST['return_date']) ? $_POST['return_date'] : null;
 
     try {
         $pdo->beginTransaction();
         
         $insert = $pdo->prepare("INSERT INTO borrowing_requests (user_id, asset_id, quantity, return_date, status) VALUES (?, ?, ?, ?, 'Pending')");
         
-        $emailItemList = "<ul>"; // Start building the HTML list for the email
+        $emailItemList = "<ul>"; 
 
         foreach ($_SESSION['cart'] as $asset_id => $qty) {
-            $check_stock = $pdo->prepare("SELECT asset_name, current_stock FROM assets WHERE asset_id = ?");
+            $check_stock = $pdo->prepare("SELECT asset_name, current_stock, category FROM assets WHERE asset_id = ?");
             $check_stock->execute([$asset_id]);
             $asset = $check_stock->fetch();
 
@@ -39,32 +49,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception("Sorry, only " . $asset['current_stock'] . " units of " . $asset['asset_name'] . " are available.");
             }
 
-            $insert->execute([$user_id, $asset_id, $qty, $return_date]);
+            // If item is a consumable, it doesn't need a return date in the database
+            $actualReturnDate = (strtolower($asset['category']) === 'consumables') ? null : $form_return_date;
+
+            $insert->execute([$user_id, $asset_id, $qty, $actualReturnDate]);
             
-            // Add item to the email list string
             $emailItemList .= "<li>" . htmlspecialchars($asset['asset_name']) . " (Qty: $qty)</li>";
         }
 
         $emailItemList .= "</ul>";
         $pdo->commit();
 
+        // Prepare return date for emails
+        $displayReturnDate = $onlyConsumables ? "N/A (Consumables)" : ($form_return_date ?? "Not specified");
+
         // --- EMAIL NOTIFICATION LOGIC ---
-        
-        // 1. Send Receipt to User
         $userSubject = "Request Received - Nuqtah Inventory";
         $userBody = "
             <p>Hello <b>$user_name</b>,</p>
             <p>Your request for the following items has been submitted:</p>
             $emailItemList
-            <p><b>Expected Return:</b> $return_date</p>
+            <p><b>Expected Return:</b> $displayReturnDate</p>
             <p><b>Status:</b> Pending Approval</p>
             <p>Please wait for an official approval email before collecting from the ICT Department.</p>";
         
         sendNuqtahEmail($user_email, $user_name, $userSubject, $userBody);
 
-
-        
-        // 2. Fetch all Active Admins and Notify them
         $adminStmt = $pdo->prepare("SELECT email, full_name FROM users WHERE role = 'Admin' AND account_status = 'Active'");
         $adminStmt->execute();
         $admins = $adminStmt->fetchAll();
@@ -76,13 +86,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p><b>From:</b> $user_name ($user_email)</p>
                 <p><b>Items:</b></p>
                 $emailItemList
-                <p><b>Required Until:</b> $return_date</p>
+                <p><b>Required Until:</b> $displayReturnDate</p>
                 <br>
                 <a href='http://localhost/Nuqtah_IT/admin/view_requests.php' 
                    style='background: #00796B; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;'>
-                   Review Request Now
+                    Review Request Now
                 </a>";
-                
             sendNuqtahEmail($admin['email'], $admin['full_name'], $adminSubject, $adminBody);
         }
 
@@ -136,11 +145,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php foreach ($cart_items as $item): 
                                 $id = $item['asset_id'];
                                 $qty = $_SESSION['cart'][$id];
+                                $isConsumable = (strtolower($item['category']) === 'consumables');
                             ?>
                             <tr>
                                 <td>
                                     <div class="fw-bold"><?php echo htmlspecialchars($item['asset_name']); ?></div>
-                                    <small class="text-muted"><?php echo $item['category']; ?></small>
+                                    <span class="badge <?php echo $isConsumable ? 'bg-info text-dark' : 'bg-secondary'; ?> small">
+                                        <?php echo ucfirst($item['category']); ?>
+                                    </span>
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
@@ -160,10 +172,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </table>
 
                 <form method="POST" class="mt-4 pt-3 border-top">
-                    <div class="mb-4">
+                    <div class="mb-4" id="return_date_section" style="<?php echo $onlyConsumables ? 'display:none;' : ''; ?>">
                         <label class="form-label fw-bold">Expected Return Date</label>
-                        <input type="date" name="return_date" class="form-control rounded-3" required min="<?php echo date('Y-m-d'); ?>">
-                        <small class="text-muted">Please select when you plan to return all these items to the ICT Department.</small>
+                        <input type="date" name="return_date" class="form-control rounded-3" 
+                               <?php echo !$onlyConsumables ? 'required' : ''; ?> 
+                               min="<?php echo date('Y-m-d'); ?>">
+                        <small class="text-muted">Please select when you plan to return the durable items.</small>
                     </div>
                     
                     <button type="submit" class="btn btn-teal w-100 py-3 rounded-pill fw-bold text-white" style="background-color: #00796B;">

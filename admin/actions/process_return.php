@@ -43,7 +43,7 @@ if ($request_id) {
             }
 
             // 4. Finalize the request status
-            $updateStatus = $pdo->prepare("UPDATE borrowing_requests SET status = 'Returned', return_note = ?, return_date = NOW() WHERE request_id = ?");
+            $updateStatus = $pdo->prepare("UPDATE borrowing_requests SET status = 'Returned', return_note = ?, actual_return_date = NOW() WHERE request_id = ?");
             $updateStatus->execute([$note, $request_id]);
         }
 

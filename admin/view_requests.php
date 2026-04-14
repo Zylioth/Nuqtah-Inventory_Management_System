@@ -111,9 +111,9 @@ $requests = $stmt->fetchAll();
                     <tr>
                         <th class="ps-4">Requester</th>
                         <th>Asset Item</th>
-                        <th>Asset Tag</th> <th>Quantity</th> 
-                        <th>Request Date</th>
-                        <th>Status</th>
+                        <th>Asset Tag</th> 
+                        <th>Quantity</th> 
+                        <th>Schedule</th> <th>Status</th>
                         <th class="text-end pe-4">Actions</th>
                     </tr>
                 </thead>
@@ -155,7 +155,30 @@ $requests = $stmt->fetchAll();
                                     <?php echo htmlspecialchars($row['quantity']); ?>
                                 </span>
                             </td>
-                            <td><?php echo date('d M Y', strtotime($row['request_date'])); ?></td>
+
+                            <td style="min-width: 180px;">
+                                <div class="d-flex flex-column gap-1">
+                                    <div class="small text-muted">
+                                        <i class="bi bi-calendar-event me-1"></i>
+                                        Requested: <?php echo date('d M Y', strtotime($row['request_date'])); ?>
+                                    </div>
+                                    
+                                    <?php if (!empty($row['return_date'])): ?>
+                                        <div class="small fw-semibold <?php echo ($status != 'Returned') ? 'text-danger' : 'text-muted'; ?>">
+                                            <i class="bi bi-calendar-range me-1"></i>
+                                            Expected: <?php echo date('d M Y', strtotime($row['return_date'])); ?>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <?php if (!empty($row['actual_return_date'])): ?>
+                                        <div class="small fw-bold text-success">
+                                            <i class="bi bi-calendar-check-fill me-1"></i>
+                                            Returned: <?php echo date('d M Y', strtotime($row['actual_return_date'])); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+
                             <td>
                                 <span class="badge <?php echo $badge_class; ?> rounded-pill status-badge">
                                     <?php echo htmlspecialchars($status); ?>
