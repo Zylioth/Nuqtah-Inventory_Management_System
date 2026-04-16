@@ -168,7 +168,7 @@ $low_stock_threshold = 5;
                                 <button class="btn btn-link btn-sm p-0 text-decoration-none text-teal fw-bold" 
                                         onclick="viewAssetTags(<?php echo $row['asset_id']; ?>, '<?php echo addslashes($row['asset_name']); ?>')"
                                         style="color: var(--teal-primary); font-size: 0.75rem;">
-                                    <i class="bi bi-tag-fill me-1"></i>View Serial Tags
+                                    <i class="bi bi-tag-fill me-1"></i>View Asset Tags
                                 </button>
                             </td>
 
@@ -303,6 +303,54 @@ document.getElementById('addTagForm').addEventListener('submit', function(e) {
         }
     });
 });
+
+function deleteTag(tagId, assetId) {
+    Swal.fire({
+        title: 'Remove Tag?',
+        text: "This serial number will be permanently deleted.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#00796B', // Matches your teal theme
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const formData = new FormData();
+            formData.append('tag_id', tagId);
+
+            fetch('actions/delete_asset_tag.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Success Toast
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true
+                    });
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'Tag removed successfully'
+                    });
+                    
+                    // Refresh the list in the modal
+                    loadTags(assetId);
+                } else {
+                    Swal.fire('Error!', data.message, 'error');
+                }
+            })
+            .catch(err => {
+                Swal.fire('Error!', 'Could not connect to the server.', 'error');
+            });
+        }
+    });
+}
 
 function filterAssets() {
     const input = document.getElementById("adminSearch");
