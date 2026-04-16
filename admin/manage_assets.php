@@ -280,6 +280,10 @@ function loadTags(assetId) {
         .then(res => res.text())
         .then(data => {
             document.getElementById('tagListBody').innerHTML = data;
+            
+            // After loading the table, let's update a "Slots Remaining" counter
+            // We can pull the stock numbers from the table row hidden in the background
+            // or just let the PHP handle the count display.
         });
 }
 
@@ -289,18 +293,37 @@ document.getElementById('addTagForm').addEventListener('submit', function(e) {
     const formData = new FormData(this);
     const assetId = formData.get('asset_id');
 
-    fetch('actions/add_asset_tag.php', {
-        method: 'POST',
-        body: formData
-    })
+    fetch('actions/add_asset_tag.php', { method: 'POST', body: formData })
     .then(res => res.json())
     .then(data => {
         if(data.success) {
-            this.reset(); // Clear the input
-            loadTags(assetId); // Refresh the list automatically
+            // Success Toast (Same as the delete one)
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true
+            });
+            Toast.fire({
+                icon: 'success',
+                title: 'Tag added successfully'
+            });
+
+            this.reset();
+            loadTags(assetId);
         } else {
-            alert("Error: " + data.message);
+            // Professional Error Alert
+            Swal.fire({
+                title: 'Cannot Add Tag',
+                text: data.message, // This pulls the "Limit reached" message from PHP
+                icon: 'error',
+                confirmButtonColor: '#00796B'
+            });
         }
+    })
+    .catch(err => {
+        Swal.fire('Error!', 'Something went wrong with the server.', 'error');
     });
 });
 
