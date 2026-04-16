@@ -19,4 +19,16 @@ try {
 } catch (\PDOException $e) {
      throw new \PDOException($e->getMessage(), (int)$e->getCode());
 }
+
+
+// Logs Aktivit
+function logActivity($pdo, $admin_id, $action) {
+    try {
+        $stmt = $pdo->prepare("INSERT INTO admin_logs (admin_id, action_taken, timestamp) VALUES (?, ?, NOW())");
+        $stmt->execute([$admin_id, $action]);
+    } catch (PDOException $e) {
+        // Silently fail or log to a file so a logging error doesn't crash the whole app
+        error_log("Logging failed: " . $e->getMessage());
+    }
+}
 ?>

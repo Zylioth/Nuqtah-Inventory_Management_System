@@ -17,35 +17,52 @@ $users = $stmt->fetchAll();
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Management - Nuqtah</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
-        :root { --sidebar-width: 260px; --teal-primary: #00796B; }
+        :root { --teal-primary: #00796B; }
         body { background-color: #f8f9fa; }
-        .sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; top: 0; left: 0; background-color: white; border-right: 1px solid #eee; z-index: 1000; }
-        .main-content { margin-left: var(--sidebar-width); padding: 30px; }
-        .nav-link { color: #555; padding: 10px 20px; margin: 2px 10px; border-radius: 8px; text-decoration: none; display: block; }
-        .nav-link.active { background-color: var(--teal-primary) !important; color: white !important; }
+        
+        .main-content { 
+            padding: 30px 15px; 
+            max-width: 1200px;
+            margin: 0 auto;
+        }
         
         /* UI Polish */
         .bg-teal { background-color: var(--teal-primary) !important; }
         .btn-teal { background-color: var(--teal-primary); color: white; border: none; }
         .btn-teal:hover { background-color: #00695C; color: white; }
         .role-badge { font-size: 0.8rem; padding: 5px 12px; }
+
+        @media (max-width: 768px) {
+            .header-flex {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 15px;
+            }
+            .btn-add-user {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
 
-<?php include 'includes/sidebar.php'; ?>
-
 <div class="main-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 header-flex">
         <div>
-            <h2 class="fw-bold mb-0">User Management</h2>
-            <p class="text-muted mb-0">Control access levels and manage accounts for Nuqtah.</p>
+            <div class="d-flex align-items-center mb-2">
+                <a href="index.php" class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-3">
+                    <i class="bi bi-arrow-left"></i> Dashboard
+                </a>
+                <h2 class="fw-bold mb-0">User Management</h2>
+            </div>
+            <p class="text-muted mb-0 ms-md-5 ps-md-2">Control access levels and manage accounts for Nuqtah.</p>
         </div>
-        <button class="btn btn-teal text-white rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+        <button class="btn btn-teal text-white rounded-pill px-4 shadow-sm btn-add-user" data-bs-toggle="modal" data-bs-target="#addUserModal">
             <i class="bi bi-person-plus-fill me-2"></i> Add New User
         </button>
     </div>
@@ -56,7 +73,6 @@ $users = $stmt->fetchAll();
                 <i class="bi <?php echo ($_GET['msg'] == 'success' || $_GET['msg'] == 'deleted') ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'; ?> fs-5 me-3"></i>
                 <div>
                     <?php 
-                        // Example logic for your alert box
                         if($_GET['msg'] == 'success') echo "User updated and activation email sent successfully!";
                         elseif ($_GET['msg'] == 'exists') echo "<strong>Registration Error!</strong> That Username or ID already exists.";
                         elseif ($_GET['msg'] == 'self_demote_error') echo "<strong>Security Alert!</strong> You cannot change your own Admin status.";
@@ -70,17 +86,15 @@ $users = $stmt->fetchAll();
         </div>
     <?php endif; ?>
 
-<!-- Seacrh Features -->
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body">
             <div class="input-group">
                 <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
                 <input type="text" id="userSearch" class="form-control border-start-0 ps-0" 
-                    placeholder="Search by name" onkeyup="filterUsers()">
+                    placeholder="Search by name, username or role" onkeyup="filterUsers()">
             </div>
         </div>
     </div>
-
 
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
         <div class="table-responsive">
@@ -276,7 +290,6 @@ function editUser(user) {
     document.getElementById('edit_username').value = user.username;
     document.getElementById('edit_email').value = user.email;
     document.getElementById('edit_role').value = user.role;
-    // Set the account status dropdown value
     document.getElementById('edit_account_status').value = user.account_status;
     new bootstrap.Modal(document.getElementById('editUserModal')).show();
 }
@@ -294,17 +307,10 @@ function filterUsers() {
     const rows = table.getElementsByTagName("tr");
 
     for (let i = 0; i < rows.length; i++) {
-        // This gets all text content in the row (Name, Username, Role, etc.)
         const rowText = rows[i].textContent.toLowerCase();
-        
-        if (rowText.includes(filter)) {
-            rows[i].style.display = "";
-        } else {
-            rows[i].style.display = "none";
-        }
+        rows[i].style.display = rowText.includes(filter) ? "" : "none";
     }
 }
-
 </script>
 </body>
 </html>

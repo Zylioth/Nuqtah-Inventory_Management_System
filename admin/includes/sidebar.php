@@ -104,6 +104,14 @@
                 <i class="bi bi-people me-2"></i> Users
             </a>
         </li>
+        
+        <li>
+            <a href="admin_logs.php" class="nav-link <?php echo ($current_page == 'admin_logs.php') ? 'active' : ''; ?>">
+                <i class="bi bi-clock-history me-2"></i> Activity Logs
+            </a>
+        </li>
+        <li>
+
         <li>
             <a href="report.php" class="nav-link <?php echo ($current_page == 'report.php') ? 'active' : ''; ?>">
                 <i class="bi bi-bar-chart-line-fill me-2"></i> Reports
