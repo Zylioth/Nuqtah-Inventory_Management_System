@@ -67,13 +67,22 @@ $users = $stmt->fetchAll();
         </button>
     </div>
 
-    <?php if (isset($_GET['msg'])): ?>
-        <div class="alert alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4 <?php echo ($_GET['msg'] == 'success' || $_GET['msg'] == 'deleted') ? 'alert-success' : 'alert-danger'; ?>" role="alert">
+<?php if (isset($_GET['msg'])): ?>
+        <?php 
+            // Define which messages should be treated as "Success" (Green)
+            $success_msgs = ['success', 'activated', 'updated', 'deleted'];
+            $is_success = in_array($_GET['msg'], $success_msgs);
+            $alert_class = $is_success ? 'alert-success' : 'alert-danger';
+            $icon_class = $is_success ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
+        ?>
+        <div class="alert alert-dismissible fade show border-0 shadow-sm rounded-4 mb-4 <?php echo $alert_class; ?>" role="alert">
             <div class="d-flex align-items-center">
-                <i class="bi <?php echo ($_GET['msg'] == 'success' || $_GET['msg'] == 'deleted') ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'; ?> fs-5 me-3"></i>
+                <i class="bi <?php echo $icon_class; ?> fs-5 me-3"></i>
                 <div>
                     <?php 
-                        if($_GET['msg'] == 'success') echo "User updated and activation email sent successfully!";
+                        if($_GET['msg'] == 'activated') echo "<strong>Account Activated!</strong> The user has been notified via email.";
+                        elseif ($_GET['msg'] == 'updated') echo "<strong>Success!</strong> User information has been updated.";
+                        elseif ($_GET['msg'] == 'success') echo "Action completed successfully!";
                         elseif ($_GET['msg'] == 'exists') echo "<strong>Registration Error!</strong> That Username or ID already exists.";
                         elseif ($_GET['msg'] == 'self_demote_error') echo "<strong>Security Alert!</strong> You cannot change your own Admin status.";
                         elseif ($_GET['msg'] == 'self_delete_error') echo "<strong>Action Denied!</strong> You cannot delete your own account.";
