@@ -1,0 +1,55 @@
+<?php
+// Mock data for preview
+$full_name = "Amir Sabrin";
+$logoUrl = "https://i.ibb.co/35cpzNsL/Nuqtah-Email-header.png";
+
+// The Redesigned Activation Message
+$message = "
+    <div style='text-align: center; margin-bottom: 25px;'>
+        <span style='background-color: #E0F2F1; color: #00796B; padding: 6px 16px; border-radius: 50px; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;'>Account Verified</span>
+        <h2 style='color: #333; margin-top: 15px; font-size: 24px;'>Welcome to Nuqtah!</h2>
+        <p style='color: #666; font-size: 15px;'>Hello <strong>" . htmlspecialchars($full_name) . "</strong>, your registration has been approved by the ICT Department.</p>
+    </div>
+
+    <div style='background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; margin-bottom: 30px;'>
+        <p style='margin: 0 0 15px 0; font-size: 14px; color: #475569; font-weight: 600;'>With your new account, you can:</p>
+        <ul style='margin: 0; padding: 0 0 0 20px; color: #1e293b; font-size: 14px; line-height: 2;'>
+            <li>Browse available IT assets and equipment</li>
+            <li>Submit borrowing requests online</li>
+            <li>Track your borrowing history and due dates</li>
+        </ul>
+    </div>
+
+    <div style='text-align: center; margin-bottom: 30px;'>
+        <a href='http://localhost/Nuqtah_IT/login.php' style='display: inline-block; background-color: #00796B; color: #ffffff; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; box-shadow: 0 4px 10px rgba(0, 121, 107, 0.25);'>Login to Your Account</a>
+    </div>
+
+    <div style='border-top: 1px solid #f1f5f9; padding-top: 20px; text-align: center;'>
+        <p style='color: #94a3b8; font-size: 11px; margin: 0;'>
+            If the button above doesn't work, copy and paste this link into your browser: <br>
+            <span style='color: #00796B;'>http://localhost/Nuqtah_IT/login.php</span>
+        </p>
+    </div>";
+
+// The Wrapper (Frame)
+$previewBody = "
+<div style='background-color: #f4f7f6; padding: 40px 20px; font-family: \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif;'>
+    <div style='max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06); border-top: 8px solid #00796B;'>
+        
+        <div style='padding: 40px 20px 20px 20px; text-align: center;'>
+            <img src='$logoUrl' alt='Nuqtah Logo' style='width: 380px; max-width: 100%; height: auto;'>
+        </div>
+
+        <div style='padding: 0 40px 40px 40px;'>
+            $message
+        </div>
+
+        <div style='background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #edf2f7;'>
+            <p style='margin: 0; font-size: 14px; font-weight: bold; color: #00796B;'>Nuqtah Inventory System</p>
+            <p style='margin: 8px 0 0; font-size: 12px; color: #94a3b8;'>ICT Department | ITQSHHB</p>
+        </div>
+    </div>
+</div>";
+
+echo $previewBody;
+?>

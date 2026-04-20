@@ -57,16 +57,34 @@ if ($request_id) {
             // Customize message based on the condition it was returned in
             $statusText = ($return_status === 'Available') ? "Good Condition" : "Flagged as $return_status";
             
-            $message = "
-                <p>Hello <strong>{$details['full_name']}</strong>,</p>
-                <p>This is a confirmation that the equipment you borrowed has been successfully processed as <strong>Returned</strong>.</p>
-                <div style='background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 5px solid #00796B;'>
-                    <strong>Item:</strong> {$details['asset_name']}<br>
-                    <strong>Returned Condition:</strong> $statusText<br>
-                    <strong>Staff Note:</strong> " . htmlspecialchars($note) . "
-                </div>
-                <p>Your record for this specific request is now cleared. Thank you for your cooperation!</p>";
+           $message = "
+    <div style='text-align: center; margin-bottom: 25px;'>
+        <span style='background-color: #E3F2FD; color: #1565C0; padding: 6px 16px; border-radius: 50px; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;'>Return Processed</span>
+        <h2 style='color: #333; margin-top: 15px; font-size: 22px;'>Equipment Clearance</h2>
+        <p style='color: #666; font-size: 15px;'>Hello <strong>{$details['full_name']}</strong>, your return has been verified by the ICT Department.</p>
+    </div>
 
+    <div style='background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 25px;'>
+        <table style='width: 100%; border-collapse: collapse;'>
+            <tr>
+                <td style='padding: 8px 0; color: #64748b; font-size: 13px;'>Item Name</td>
+                <td style='padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 600; text-align: right;'>{$details['asset_name']}</td>
+            </tr>
+            <tr>
+                <td style='padding: 8px 0; color: #64748b; font-size: 13px;'>Condition</td>
+                <td style='padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 600; text-align: right;'>$statusText</td>
+            </tr>
+            <tr>
+                <td style='padding: 8px 0; color: #64748b; font-size: 13px;'>Staff Remarks</td>
+                <td style='padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 600; text-align: right;'>" . htmlspecialchars($note) . "</td>
+            </tr>
+        </table>
+    </div>
+
+    <div style='border-top: 1px dashed #e2e8f0; padding-top: 20px; text-align: center;'>
+        <p style='margin: 0; font-size: 14px; color: #2E7D32; font-weight: 600;'>✅ Your record for this request is now cleared.</p>
+        <p style='margin: 10px 0 0; font-size: 13px; color: #666;'>Thank you for returning the equipment on time.</p>
+    </div>";
             sendNuqtahEmail($details['email'], $details['full_name'], $subject, $message);
 
         } else {
