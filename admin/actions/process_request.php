@@ -78,7 +78,7 @@ if ($request_id && $action) {
             // 2. SEND EMAIL AFTER COMMIT (Prevents DB rollback if mail server is slow)
             sendNuqtahEmail($request['email'], $request['full_name'], $subject, $message);
 
-            header("Location: ../view_requests.php?msg=success");
+            header("Location: ../view_requests.php?msg=approved");
         } else {
             if ($pdo->inTransaction()) { $pdo->rollBack(); }
             header("Location: ../view_requests.php?msg=already_processed");

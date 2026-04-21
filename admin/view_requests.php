@@ -66,31 +66,36 @@ $requests = $stmt->fetchAll();
             </div>
         </div>
 
-        <?php if (isset($_GET['msg'])): ?>
-            <div class="alert alert-dismissible fade show border-0 shadow-sm rounded-3 ms-md-5 mb-4 
-                <?php 
-                    if ($_GET['msg'] == 'issued') echo 'alert-success';
-                    elseif ($_GET['msg'] == 'returned') echo 'alert-info';
-                    elseif ($_GET['msg'] == 'error') echo 'alert-danger';
-                    else echo 'alert-primary';
-                ?>" role="alert">
-                
-                <i class="bi <?php 
-                    if ($_GET['msg'] == 'issued') echo 'bi-check-circle-fill';
-                    elseif ($_GET['msg'] == 'returned') echo 'bi-arrow-left-right';
-                    else echo 'bi-exclamation-triangle-fill';
-                ?> me-2"></i>
+<?php if (isset($_GET['msg'])): ?>
+    <div class="alert alert-dismissible fade show border-0 shadow-sm rounded-3 ms-md-5 mb-4 
+        <?php 
+            if ($_GET['msg'] == 'issued' || $_GET['msg'] == 'approved') echo 'alert-success';
+            elseif ($_GET['msg'] == 'returned') echo 'alert-info';
+            elseif ($_GET['msg'] == 'rejected') echo 'alert-warning';
+            elseif ($_GET['msg'] == 'error') echo 'alert-danger';
+            else echo 'alert-primary';
+        ?>" role="alert">
+        
+        <i class="bi <?php 
+            if ($_GET['msg'] == 'issued' || $_GET['msg'] == 'approved') echo 'bi-check-circle-fill';
+            elseif ($_GET['msg'] == 'returned') echo 'bi-arrow-left-right';
+            elseif ($_GET['msg'] == 'rejected') echo 'bi-x-circle-fill';
+            else echo 'bi-exclamation-triangle-fill';
+        ?> me-2"></i>
 
-                <strong>
-                    <?php 
-                        if ($_GET['msg'] == 'issued') echo 'Item Issued Successfully!';
-                        elseif ($_GET['msg'] == 'returned') echo 'Item Returned & Restocked!';
-                        elseif ($_GET['msg'] == 'error') echo 'Something went wrong. Please try again.';
-                    ?>
-                </strong>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        <?php endif; ?>
+        <strong>
+            <?php 
+                if ($_GET['msg'] == 'approved') echo 'Request has been Approved!';
+                elseif ($_GET['msg'] == 'issued') echo 'Item Issued Successfully!';
+                elseif ($_GET['msg'] == 'returned') echo 'Item Returned & Restocked!';
+                elseif ($_GET['msg'] == 'rejected') echo 'Request has been Rejected.';
+                elseif ($_GET['msg'] == 'error') echo 'Something went wrong. Please try again.';
+                else echo 'Action completed.';
+            ?>
+        </strong>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+<?php endif; ?>
 
         <div class="row mb-4">
             <div class="col-md-5">
