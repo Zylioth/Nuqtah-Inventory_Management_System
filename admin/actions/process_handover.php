@@ -42,39 +42,61 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
             $updateStock->execute([$asset_id]);
 
-            // 3. Update the Request Status
-            $stmtReq = $pdo->prepare("UPDATE borrowing_requests 
-                                      SET status = ?, 
-                                          tag_id = ?, 
-                                          condition_note = ? 
-                                      WHERE request_id = ?");
-            $stmtReq->execute([$newStatus, $tag_id, $handover_note, $request_id]);
 
-            // 4. Update the Tag Status
-            $stmtTag = $pdo->prepare("UPDATE asset_tags SET status = ? WHERE tag_id = ?");
-            $stmtTag->execute([$newStatus, $tag_id]);
+// 3. Update the Request Status (sama date ia taakn)
+$stmtReq = $pdo->prepare("UPDATE borrowing_requests 
+                          SET status = ?, 
+                              tag_id = ?, 
+                              condition_note = ?,
+                              issued_date = NOW() 
+                          WHERE request_id = ?");
+$stmtReq->execute([$newStatus, $tag_id, $handover_note, $request_id]);
 
-            $pdo->commit();
+// 4. Update the Tag Status
+$stmtTag = $pdo->prepare("UPDATE asset_tags SET status = ? WHERE tag_id = ?");
+$stmtTag->execute([$newStatus, $tag_id]);
 
-            // 5. TRIGGER EMAIL NOTIFICATION
-            $subject = ($newStatus === 'Issued') ? "Item Issued - Nuqtah System" : "Equipment Handover Confirmed - Nuqtah";
-            
-            $instr = ($newStatus === 'Issued') 
-                ? "This item has been issued to you. No return is required." 
-                : "This item is now on loan to you. Please return it by <strong>" . date('d M Y', strtotime($details['return_date'])) . "</strong>.";
+$pdo->commit();
 
-            $message = "
-                <p>Hello <strong>{$details['full_name']}</strong>,</p>
-                <p>The ICT Department has processed your request for <strong>{$details['asset_name']}</strong>.</p>
-                <div style='background: #f4f4f4; padding: 15px; border-radius: 8px; border-left: 5px solid #00796B;'>
-                    <strong>Status:</strong> $newStatus<br>
-                    <strong>Tag ID:</strong> $tag_id<br>
-                    <strong>Condition:</strong> " . ($handover_note ?: 'Good/Normal') . "
-                </div>
-                <p>$instr</p>
-                <p>Please handle the equipment with care.</p>";
+// 5. TRIGGER EMAIL NOTIFICATION (Updated with Premium UI)
+$subject = ($newStatus === 'Issued') ? "Item Issued - Nuqtah System" : "Equipment Handover Confirmed - Nuqtah";
 
-            sendNuqtahEmail($details['email'], $details['full_name'], $subject, $message);
+// Create the Badge and Table for the modern layout
+$badgeColor = ($newStatus === 'Issued') ? "#E8F5E9" : "#E0F2F1";
+$badgeText = ($newStatus === 'Issued') ? "#2E7D32" : "#00796B";
+$statusLabel = ($newStatus === 'Issued') ? "Issued Permanently" : "On Loan";
+
+$message = "
+    <div style='text-align: center; margin-bottom: 25px;'>
+        <span style='background-color: $badgeColor; color: $badgeText; padding: 6px 16px; border-radius: 50px; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;'>$statusLabel</span>
+        <h2 style='color: #333; margin-top: 15px; font-size: 22px;'>Handover Confirmation</h2>
+        <p style='color: #666; font-size: 15px;'>Hello <strong>{$details['full_name']}</strong>, your equipment request has been finalized.</p>
+    </div>
+
+    <div style='background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 25px;'>
+        <table style='width: 100%; border-collapse: collapse;'>
+            <tr>
+                <td style='padding: 8px 0; color: #64748b; font-size: 13px;'>Item</td>
+                <td style='padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 600; text-align: right;'>{$details['asset_name']}</td>
+            </tr>
+            <tr>
+                <td style='padding: 8px 0; color: #64748b; font-size: 13px;'>Tag ID</td>
+                <td style='padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 600; text-align: right;'><code>$tag_id</code></td>
+            </tr>
+            <tr>
+                <td style='padding: 8px 0; color: #64748b; font-size: 13px;'>Return Due</td>
+                <td style='padding: 8px 0; color: #b91c1c; font-size: 14px; font-weight: 600; text-align: right;'>" . 
+                    ($newStatus === 'Issued' ? 'N/A' : date('d M Y', strtotime($details['return_date']))) . 
+                "</td>
+            </tr>
+        </table>
+    </div>
+
+    <div style='border-top: 1px dashed #e2e8f0; padding-top: 20px; font-size: 13px; color: #666;'>
+        <p style='margin: 0;'><strong>Note:</strong> " . ($handover_note ?: 'No specific condition notes recorded.') . "</p>
+    </div>";
+
+sendNuqtahEmail($details['email'], $details['full_name'], $subject, $message);
 
             header("Location: ../view_requests.php?msg=issued");
         } catch (Exception $e) {

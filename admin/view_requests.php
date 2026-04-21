@@ -7,7 +7,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
     exit();
 }
 
-// Fetch requests with User, Asset, and specific Tag details
+// 1. UPDATED QUERY: Added r.issued_date to the SELECT statement
 $query = "SELECT r.*, u.full_name, a.asset_name, a.category, t.unique_tag as assigned_tag_name 
           FROM borrowing_requests r
           JOIN users u ON r.user_id = u.user_id
@@ -42,6 +42,11 @@ $requests = $stmt->fetchAll();
         .status-badge { font-size: 0.85rem; padding: 6px 12px; }
         .card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
         .table-hover tbody tr:hover { background-color: #f0f7f6; transition: 0.2s; }
+
+        /* Custom styling for the timeline schedule labels */
+        .schedule-label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: block; color: #6c757d; margin-bottom: -2px; }
+        .schedule-val { font-size: 13px; display: block; margin-bottom: 8px; }
+        .schedule-val:last-child { margin-bottom: 0; }
     </style>
 </head>
 <body>
@@ -50,16 +55,16 @@ $requests = $stmt->fetchAll();
     <div class="container-fluid requests-container">
 
         <div class="mb-4">
-                    <div class="d-flex align-items-center mb-3">
-                        <a href="index.php" class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-3">
-                            <i class="bi bi-arrow-left"></i> Dashboard
-                        </a>
-                        <h2 class="fw-bold mb-0">Borrowing Requests</h2>
-                    </div>
-                    <div class="ms-md-5 ps-md-2">
-                        <p class="text-muted mb-0">Review and manage equipment loan applications for ITQSHHB.</p>
-                    </div>
-                </div>
+            <div class="d-flex align-items-center mb-3">
+                <a href="index.php" class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-3">
+                    <i class="bi bi-arrow-left"></i> Dashboard
+                </a>
+                <h2 class="fw-bold mb-0">Borrowing Requests</h2>
+            </div>
+            <div class="ms-md-5 ps-md-2">
+                <p class="text-muted mb-0">Review and manage equipment loan applications for ITQSHHB.</p>
+            </div>
+        </div>
 
         <?php if (isset($_GET['msg'])): ?>
             <div class="alert alert-dismissible fade show border-0 shadow-sm rounded-3 ms-md-5 mb-4 
@@ -89,7 +94,7 @@ $requests = $stmt->fetchAll();
 
         <div class="row mb-4">
             <div class="col-md-5">
-                <div class="input-group shadow-sm">
+                <div class="input-group shadow-sm ms-md-5">
                     <span class="input-group-text bg-white border-end-0">
                         <i class="bi bi-search text-muted"></i>
                     </span>
@@ -99,7 +104,7 @@ $requests = $stmt->fetchAll();
             </div>
         </div>
 
-        <div class="card rounded-4 overflow-hidden">
+        <div class="card rounded-4 overflow-hidden ms-md-5">
             <div class="table-responsive">
                 <table class="table align-middle mb-0 table-hover">
                     <thead class="table-light">
@@ -108,7 +113,7 @@ $requests = $stmt->fetchAll();
                             <th>Asset Item</th>
                             <th>Asset Tag</th> 
                             <th>Qty</th> 
-                            <th>Schedule</th> 
+                            <th>Timeline Schedule</th> 
                             <th>Status</th>
                             <th class="text-end pe-4">Actions</th>
                         </tr>
@@ -152,25 +157,30 @@ $requests = $stmt->fetchAll();
                                     </span>
                                 </td>
 
-                                <td style="min-width: 180px;">
-                                    <div class="d-flex flex-column gap-1">
-                                        <div class="small text-muted">
-                                            <i class="bi bi-calendar-event me-1"></i>
-                                            Requested: <?php echo date('d M Y', strtotime($row['request_date'])); ?>
-                                        </div>
+                                <td style="min-width: 200px;">
+                                    <div class="d-flex flex-column py-1">
+                                        <span class="schedule-label">Requested</span>
+                                        <span class="schedule-val text-dark"><?php echo date('d M Y', strtotime($row['request_date'])); ?></span>
                                         
-                                        <?php if (!empty($row['return_date'])): ?>
-                                            <div class="small fw-semibold <?php echo ($status != 'Returned') ? 'text-danger' : 'text-muted'; ?>">
-                                                <i class="bi bi-calendar-range me-1"></i>
-                                                Expected: <?php echo date('d M Y', strtotime($row['return_date'])); ?>
-                                            </div>
-                                        <?php endif; ?>
+                                        <span class="schedule-label">Issued On</span>
+                                        <span class="schedule-val">
+                                            <?php if (!empty($row['issued_date'])): ?>
+                                                <span class="text-primary fw-semibold"><i class="bi bi-box-arrow-right me-1"></i><?php echo date('d M Y, h:i A', strtotime($row['issued_date'])); ?></span>
+                                            <?php else: ?>
+                                                <span class="text-muted italic small">Waiting for handover</span>
+                                            <?php endif; ?>
+                                        </span>
+
+                                        <span class="schedule-label">Return Due</span>
+                                        <span class="schedule-val <?php echo ($status == 'On Loan') ? 'text-danger fw-bold' : 'text-muted'; ?>">
+                                            <?php echo !empty($row['return_date']) ? date('d M Y', strtotime($row['return_date'])) : 'N/A'; ?>
+                                        </span>
 
                                         <?php if (!empty($row['actual_return_date'])): ?>
-                                            <div class="small fw-bold text-success">
-                                                <i class="bi bi-calendar-check-fill me-1"></i>
-                                                Returned: <?php echo date('d M Y', strtotime($row['actual_return_date'])); ?>
-                                            </div>
+                                            <span class="schedule-label text-success">Actually Returned</span>
+                                            <span class="schedule-val text-success fw-bold">
+                                                <i class="bi bi-check-circle-fill me-1"></i><?php echo date('d M Y', strtotime($row['actual_return_date'])); ?>
+                                            </span>
                                         <?php endif; ?>
                                     </div>
                                 </td>
