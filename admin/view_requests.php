@@ -47,6 +47,18 @@ $requests = $stmt->fetchAll();
         .schedule-label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: block; color: #6c757d; margin-bottom: -2px; }
         .schedule-val { font-size: 13px; display: block; margin-bottom: 8px; }
         .schedule-val:last-child { margin-bottom: 0; }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+
+        .animate-pulse {
+            /* This connects the class to the keyframes above */
+            animation: pulse-red 2s infinite;
+        }
+        
     </style>
 </head>
 <body>
@@ -123,18 +135,29 @@ $requests = $stmt->fetchAll();
                             <th class="text-end pe-4">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+<tbody>
                         <?php foreach ($requests as $row): ?>
                             <?php 
+                                // 1. OVERDUE LOGIC
+                                $today = date('Y-m-d');
+                                $isOverdue = ($row['status'] == 'On Loan' && $today > $row['return_date']);
+
                                 $status = $row['status'];
                                 $badge_class = "bg-secondary text-white";
                                 
-                                if ($status == 'Pending') $badge_class = "bg-warning text-dark";
-                                elseif ($status == 'Approved') $badge_class = "bg-primary text-white";
-                                elseif ($status == 'On Loan') $badge_class = "bg-success text-white";
-                                elseif ($status == 'Issued') $badge_class = "bg-purple text-white"; 
-                                elseif ($status == 'Returned') $badge_class = "bg-info text-dark";
-                                elseif ($status == 'Rejected') $badge_class = "bg-danger text-white";
+                                // 2. UPDATED BADGE LOGIC (Adds Overdue Support)
+                                if ($isOverdue) {
+                                    $badge_class = "bg-danger text-white animate-pulse";
+                                    $display_status = "OVERDUE";
+                                } else {
+                                    $display_status = $status;
+                                    if ($status == 'Pending') $badge_class = "bg-warning text-dark";
+                                    elseif ($status == 'Approved') $badge_class = "bg-primary text-white";
+                                    elseif ($status == 'On Loan') $badge_class = "bg-success text-white";
+                                    elseif ($status == 'Issued') $badge_class = "bg-purple text-white"; 
+                                    elseif ($status == 'Returned') $badge_class = "bg-info text-dark";
+                                    elseif ($status == 'Rejected') $badge_class = "bg-danger text-white";
+                                }
                             ?>
                             <tr>
                                 <td class="ps-4">
@@ -177,8 +200,11 @@ $requests = $stmt->fetchAll();
                                         </span>
 
                                         <span class="schedule-label">Return Due</span>
-                                        <span class="schedule-val <?php echo ($status == 'On Loan') ? 'text-danger fw-bold' : 'text-muted'; ?>">
+                                        <span class="schedule-val <?php echo $isOverdue ? 'text-danger fw-bold' : 'text-muted'; ?>">
                                             <?php echo !empty($row['return_date']) ? date('d M Y', strtotime($row['return_date'])) : 'N/A'; ?>
+                                            <?php if ($isOverdue): ?>
+                                                <i class="bi bi-exclamation-triangle-fill ms-1"></i>
+                                            <?php endif; ?>
                                         </span>
 
                                         <?php if (!empty($row['actual_return_date'])): ?>
@@ -192,7 +218,7 @@ $requests = $stmt->fetchAll();
 
                                 <td>
                                     <span class="badge <?php echo $badge_class; ?> rounded-pill status-badge">
-                                        <?php echo htmlspecialchars($status); ?>
+                                        <?php echo htmlspecialchars($display_status); ?>
                                     </span>
                                 </td>
 
@@ -208,7 +234,7 @@ $requests = $stmt->fetchAll();
                                         </button>
 
                                     <?php elseif ($status == 'On Loan'): ?>
-                                        <button class="btn btn-sm btn-dark rounded-pill px-3" onclick="processReturn(<?php echo $row['request_id']; ?>)">
+                                        <button class="btn <?php echo $isOverdue ? 'btn-danger' : 'btn-dark'; ?> btn-sm rounded-pill px-3 shadow-sm" onclick="processReturn(<?php echo $row['request_id']; ?>)">
                                             <i class="bi bi-arrow-left-right me-1"></i>Mark Returned
                                         </button>
                                         
