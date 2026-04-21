@@ -12,6 +12,8 @@ $total_assets = $pdo->query("SELECT COUNT(*) FROM assets")->fetchColumn();
 $pending_requests = $pdo->query("SELECT COUNT(*) FROM borrowing_requests WHERE status = 'Pending'")->fetchColumn();
 $low_stock_count = $pdo->query("SELECT COUNT(*) FROM assets WHERE current_stock > 0 AND current_stock <= 5")->fetchColumn();
 $out_of_stock_count = $pdo->query("SELECT COUNT(*) FROM assets WHERE current_stock = 0")->fetchColumn();
+
+$overdue_count = $pdo->query("SELECT COUNT(*) FROM borrowing_requests WHERE status = 'On Loan' AND return_date < CURDATE()")->fetchColumn();
 $healthy_stock_count = $total_assets - ($low_stock_count + $out_of_stock_count);
 
 // 2. Data for Category Bar Chart
@@ -23,14 +25,17 @@ while($row = $cat_query->fetch()) {
     $counts[] = $row['count'];
 }
 
-// 3. Fetch Recent Pending Requests
-$query = "SELECT b.request_id, b.request_date, b.quantity, u.full_name, a.asset_name 
+// Fetch Pending OR Overdue requests (Limited to 5)
+$query = "SELECT b.request_id, b.request_date, b.return_date, b.quantity, b.status, u.full_name, a.asset_name 
           FROM borrowing_requests b 
           JOIN users u ON b.user_id = u.user_id 
           JOIN assets a ON b.asset_id = a.asset_id 
           WHERE b.status = 'Pending' 
-          ORDER BY b.request_date DESC LIMIT 5";
+          OR (b.status = 'On Loan' AND b.return_date < CURDATE())
+          ORDER BY (CASE WHEN b.status = 'On Loan' THEN 1 ELSE 2 END), b.request_date DESC 
+          LIMIT 5";
 $pending_list = $pdo->query($query)->fetchAll();
+
 ?>
 
 <!DOCTYPE html>
@@ -70,6 +75,17 @@ $pending_list = $pdo->query($query)->fetchAll();
     .card-stats:hover { transform: translateY(-5px); }
     .chart-container { position: relative; height: 300px; width: 100%; }
     .text-teal { color: var(--teal-primary) !important; }
+
+    /* utk mliatkn urgent  */
+    .border-danger.card-stats {
+        animation: card-pulse 2s infinite;
+    }
+
+    @keyframes card-pulse {
+        0% { box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); }
+        50% { box-shadow: 0 0 15px rgba(220, 53, 69, 0.3); }
+        100% { box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); }
+    }
 </style>
 
 </head>
@@ -121,19 +137,24 @@ $pending_list = $pdo->query($query)->fetchAll();
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card card-stats p-3 border-start border-4 border-warning">
-                <div class="d-flex align-items-center">
-                    <div class="p-3 bg-warning bg-opacity-10 text-warning rounded-3 me-3">
-                        <i class="bi bi-exclamation-triangle fs-4"></i>
-                    </div>
-                    <div>
-                        <p class="text-muted mb-0 small">Low Stock</p>
-                        <h4 class="fw-bold mb-0"><?php echo $low_stock_count; ?></h4>
+
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card card-stats p-3 border-start border-4 border-danger">
+                        <div class="d-flex align-items-center">
+                            <div class="p-3 bg-danger bg-opacity-10 text-danger rounded-3 me-3">
+                                <i class="bi bi-calendar-x fs-4"></i>
+                            </div>
+                            <div>
+                                <p class="text-muted mb-0 small">Overdue</p>
+                                <h4 class="fw-bold mb-0 <?php echo ($overdue_count > 0) ? 'text-danger' : ''; ?>">
+                                    <?php echo $overdue_count; ?>
+                                </h4>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
+
         <div class="col-sm-6 col-xl-3">
             <div class="card card-stats p-3 border-start border-4 border-danger">
                 <div class="d-flex align-items-center">
@@ -172,7 +193,7 @@ $pending_list = $pdo->query($query)->fetchAll();
         <div class="col-12">
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0">Recent Requests</h5>
+                    <h5 class="fw-bold mb-0">Action Required</h5>
                     <a href="view_requests.php" class="btn btn-sm btn-light rounded-pill px-3">View All</a>
                 </div>
                 <div class="table-responsive px-3 pb-3">
@@ -187,12 +208,25 @@ $pending_list = $pdo->query($query)->fetchAll();
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($pending_list as $request): ?>
+                            <?php foreach ($pending_list as $request): 
+                                $isOverdue = ($request['status'] == 'On Loan' && date('Y-m-d') > $request['return_date']);
+                            ?>
                             <tr>
-                                <td class="fw-bold text-dark"><?php echo htmlspecialchars($request['full_name']); ?></td>
+                                <td class="fw-bold text-dark">
+                                    <?php echo htmlspecialchars($request['full_name']); ?>
+                                    <?php if ($isOverdue): ?>
+                                        <span class="badge bg-danger ms-1" style="font-size: 0.65rem;">LATE</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo htmlspecialchars($request['asset_name']); ?></td>
-                                <td class="text-muted small d-none d-md-table-cell"><?php echo date('d M', strtotime($request['request_date'])); ?></td>
-                                <td><span class="badge bg-light text-dark border"><?php echo $request['quantity']; ?></span></td>
+                                <td class="text-muted small d-none d-md-table-cell">
+                                    <?php echo date('d M', strtotime($request['request_date'])); ?>
+                                </td>
+                                <td>
+                                    <span class="badge <?php echo $isOverdue ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-dark'; ?> border">
+                                        <?php echo $request['quantity']; ?>
+                                    </span>
+                                </td>
                                 <td class="text-end">
                                     <a href="view_requests.php" class="btn btn-sm btn-teal-light rounded-pill">Manage</a>
                                 </td>
