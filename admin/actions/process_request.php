@@ -8,7 +8,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
     exit();
 }
 
-// Using GET as per your current file logic
 $request_id = $_GET['id'] ?? null;
 $action = $_GET['action'] ?? $_GET['status'] ?? null;
 $note = $_GET['note'] ?? '';
@@ -35,7 +34,6 @@ if ($request_id && $action) {
             if ($new_status === 'Approved') {
                 $qty = (int)$request['quantity'];
 
-                // Split quantities into individual rows for unique tag assignment
                 if ($qty > 1) {
                     for ($i = 1; $i < $qty; $i++) {
                         $copyStmt = $pdo->prepare("INSERT INTO borrowing_requests 
@@ -51,34 +49,33 @@ if ($request_id && $action) {
                     $updateStatus->execute([$request_id]);
                 }
 
-                // Prepare Approval Email
                 $subject = "Request Approved - Nuqtah Inventory";
-                $message = "
-                    <h3>Hello {$request['full_name']}!</h3>
-                    <p>Your request for <b>{$request['asset_name']}</b> has been <b>Approved</b>.</p>
-                    <p>Please proceed to the <b>ICT Department</b> to collect your item.</p>
-                    <p style='color: #555;'><i>Note: Please bring your student/staff ID for verification.</i></p>";
+                $message = "<h3>Hello {$request['full_name']}!</h3><p>Your request for <b>{$request['asset_name']}</b> has been <b>Approved</b>.</p>";
                 
             } else {
-                // Handle Rejection
                 $updateStatus = $pdo->prepare("UPDATE borrowing_requests SET status = 'Rejected', admin_note = ?, is_read = 0 WHERE request_id = ?");
                 $updateStatus->execute([$note, $request_id]);
 
-                // Prepare Rejection Email
                 $subject = "Update on Your Borrowing Request";
-                $message = "
-                    <h3>Hello {$request['full_name']},</h3>
-                    <p>We regret to inform you that your request for <b>{$request['asset_name']}</b> could not be approved at this time.</p>
-                    <p><b>Reason:</b> " . (!empty($note) ? htmlspecialchars($note) : "No specific reason provided.") . "</p>
-                    <p>Feel free to submit a new request or visit the ICT Department for inquiries.</p>";
+                $message = "<h3>Hello {$request['full_name']},</h3><p>Your request for <b>{$request['asset_name']}</b> was rejected. Reason: " . htmlspecialchars($note) . "</p>";
             }
+
+            // --- FINAL CORRECTED LOGGING (admin_logs) ---
+            $admin_name = $_SESSION['full_name'];
+            $action_verb = ($new_status === 'Approved') ? "APPROVED" : "REJECTED";
+            
+           
+            $log_text = "Admin $admin_name $action_verb request #$request_id ({$request['asset_name']}) for {$request['full_name']}.";
+            
+            // admin_id and action_taken
+            $log_sql = "INSERT INTO admin_logs (admin_id, action_taken) VALUES (?, ?)";
+            $log_stmt = $pdo->prepare($log_sql);
+            $log_stmt->execute([$_SESSION['user_id'], $log_text]);
 
             $pdo->commit();
 
-            // 2. SEND EMAIL AFTER COMMIT (Prevents DB rollback if mail server is slow)
             sendNuqtahEmail($request['email'], $request['full_name'], $subject, $message);
-
-            header("Location: ../view_requests.php?msg=approved");
+            header("Location: ../view_requests.php?msg=success");
         } else {
             if ($pdo->inTransaction()) { $pdo->rollBack(); }
             header("Location: ../view_requests.php?msg=already_processed");
