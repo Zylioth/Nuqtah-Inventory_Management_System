@@ -258,7 +258,16 @@ $pending_list = $pdo->query($query)->fetchAll();
         },
         options: {
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } }
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1, // This forces the chart to count by 1, 2, 3...
+                        precision: 0  // This ensures no decimals are shown
+                    }
+                }
+            }
         }
     });
 
