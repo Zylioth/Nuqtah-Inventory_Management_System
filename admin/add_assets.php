@@ -12,9 +12,8 @@ $message = "";
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $name = $_POST['asset_name'];
     $category = $_POST['category'];
-    $initial_stock = $_POST['current_stock']; // This is the input from the form
+    $initial_stock = $_POST['current_stock']; 
     
-    // Set both columns to the same initial value
     $total_stock = $initial_stock;
     $current_stock = $initial_stock;
     
@@ -33,10 +32,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     try {
-        // Updated SQL to include total_stock
         $sql = "INSERT INTO assets (asset_name, category, total_stock, current_stock, status, asset_image) VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
+        
         if ($stmt->execute([$name, $category, $total_stock, $current_stock, $status, $image_name])) {
+            
+            // --- ACTIVITY LOG START ---
+            $new_asset_id = $pdo->lastInsertId(); // Get the ID of the asset we just created
+            $admin_id = $_SESSION['user_id'];
+            $admin_name = $_SESSION['full_name'] ?? 'Admin'; // Fallback if name isn't in session
+            
+            $log_msg = "Admin $admin_name ADDED a new asset: $name (ID: #$new_asset_id) with initial stock of $initial_stock.";
+            
+            logActivity($pdo, $admin_id, $log_msg);
+            // --- ACTIVITY LOG END ---
+
             $message = "success";
         } else {
             $message = "error";
@@ -51,17 +61,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add New Asset - Nuqtah</title>
     <link rel="icon" type="image/png" href="/Nuqtah_IT/assets/img/Nuqtah_logo_small.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
         :root { --teal-primary: #00796B; }
-        body { background-color: #f8f9fa; }
+        body { background-color: #f8f9fa; font-family: 'Inter', sans-serif; }
         .main-content { padding: 20px; min-height: 100vh; }
         .btn-teal { background-color: var(--teal-primary); color: white; border: none; }
         .btn-teal:hover { background-color: #004D40; color: white; }
         .form-card { max-width: 850px; margin: 0 auto; }
+        .preview-img { max-width: 200px; height: auto; border: 2px solid #eee; border-radius: 12px; }
     </style>
 </head>
 <body>
@@ -118,6 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     <option value="Projectors">Projectors</option>
                                     <option value="Accessories">Accessories</option>
                                     <option value="Consumables">Consumables</option>
+                                    <option value="Stationery">Stationery</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
@@ -131,9 +144,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <label class="form-label fw-bold">Asset Image</label>
                             <div class="border rounded-3 p-4 bg-white text-center">
                                 <div id="preview-container" class="mb-3 d-none">
-                                    <img id="image-preview" src="#" alt="Preview" class="rounded-3 shadow-sm" style="max-width: 200px; height: auto; border: 2px solid #eee;">
+                                    <img id="image-preview" src="#" alt="Preview" class="preview-img shadow-sm">
                                 </div>
-                                
                                 <input type="file" name="asset_image" id="asset_image" class="form-control mb-2" accept="image/*" onchange="previewImage(this)">
                                 <small class="text-muted"><i class="bi bi-info-circle me-1"></i> Recommended: 800x600px (JPG, PNG, or WebP).</small>
                             </div>
@@ -148,7 +160,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </form>
                 </div>
             </div>
-            
             <p class="text-center text-muted small mt-4">Nuqtah IT Inventory System &copy; 2026</p>
         </div>
     </div>
@@ -158,7 +169,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 function previewImage(input) {
     const container = document.getElementById('preview-container');
     const preview = document.getElementById('image-preview');
-    
     if (input.files && input.files[0]) {
         const reader = new FileReader();
         reader.onload = function(e) {

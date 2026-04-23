@@ -21,7 +21,6 @@ $low_stock_threshold = 5;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Inventory - Nuqtah</title>
-    <!-- tambah logonya -->
     <link rel="icon" type="image/png" href="/Nuqtah_IT/assets/img/Nuqtah_logo_small.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -30,19 +29,14 @@ $low_stock_threshold = 5;
     <style>
         :root { --teal-primary: #00796B; --teal-dark: #004D40; }
         body { background-color: #f8f9fa; font-family: 'Inter', sans-serif; }
-        
-        /* Full Page Layout Adjustments */
         .main-content { padding: 40px 0; }
         .inventory-container { max-width: 1300px; margin: 0 auto; }
-        
         .asset-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; }
         .badge-low { background-color: #FFF3E0; color: #E65100; border: 1px solid #FFE0B2; }
         .text-teal { color: var(--teal-primary) !important; }
         .bg-teal { background-color: var(--teal-primary) !important; }
-        
         .card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
         .table-hover tbody tr:hover { background-color: #f0f7f6; transition: 0.2s; }
-        
         .btn-teal { background-color: var(--teal-primary); color: white; border: none; }
         .btn-teal:hover { background-color: var(--teal-dark); color: white; }
     </style>
@@ -192,11 +186,7 @@ $low_stock_threshold = 5;
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body px-4 pb-4">
-                <p class="text-muted">Are you sure you want to delete this asset? This action will permanently remove the record from the Nuqtah database.</p>
-                <div class="d-flex align-items-center bg-light p-3 rounded-3 border-start border-warning border-4">
-                    <i class="bi bi-exclamation-triangle-fill text-warning fs-4 me-3"></i>
-                    <span class="small fw-bold text-dark">Warning: This may affect existing borrowing history records.</span>
-                </div>
+                <p class="text-muted">Are you sure you want to delete this asset? This action will permanently remove the record.</p>
             </div>
             <div class="modal-footer border-0 px-4 pb-4">
                 <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
@@ -238,7 +228,6 @@ $low_stock_threshold = 5;
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-// Modal & Logic Functions
 function showDeleteModal(id) {
     document.getElementById('confirmDeleteBtn').href = 'delete_asset.php?id=' + id;
     new bootstrap.Modal(document.getElementById('deleteModal')).show();
@@ -297,6 +286,40 @@ function deleteTag(tagId, assetId) {
                     Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tag removed', showConfirmButton: false, timer: 2000 });
                     loadTags(assetId);
                 } else { Swal.fire('Error!', data.message, 'error'); }
+            });
+        }
+    });
+}
+
+// Mark as Available AJAX
+function markAsAvailable(tagId, assetId, uniqueTag) {
+    Swal.fire({
+        title: 'Mark as Available?',
+        text: `Confirm that ${uniqueTag} is repaired and ready for use?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#00796B',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, it is ready!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('actions/update_tag_status.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'tag_id=' + tagId + '&asset_id=' + assetId + '&unique_tag=' + encodeURIComponent(uniqueTag)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Status Updated', text: `${uniqueTag} is now available.`, timer: 2000, showConfirmButton: false });
+                    loadTags(assetId); // Refresh the list inside the modal
+                } else {
+                    Swal.fire('Error', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('Error', 'Could not reach the server.', 'error');
             });
         }
     });
