@@ -208,12 +208,26 @@ $requests = $stmt->fetchAll();
                                             <?php endif; ?>
                                         </span>
 
-                                        <?php if (!empty($row['actual_return_date'])): ?>
-                                            <span class="schedule-label text-success">Actually Returned</span>
-                                            <span class="schedule-val text-success fw-bold">
-                                                <i class="bi bi-check-circle-fill me-1"></i><?php echo date('d M Y', strtotime($row['actual_return_date'])); ?>
-                                            </span>
-                                        <?php endif; ?>
+                                    <?php if (!empty($row['actual_return_date'])): ?>
+                                        <?php 
+                                            // 1. Prepare clean date strings for comparison (YYYY-MM-DD)
+                                            $deadline_date = date('Y-m-d', strtotime($row['return_date']));
+                                            $actual_date = date('Y-m-d', strtotime($row['actual_return_date']));
+
+                                            // 2. Logic: Only RED if strictly AFTER the deadline
+                                            $isLate = ($actual_date > $deadline_date);
+                                            $statusColor = $isLate ? 'text-danger' : 'text-success';
+                                        ?>
+                                        
+                                        <span class="schedule-label <?php echo $statusColor; ?>">Actually Returned</span>
+                                        <span class="schedule-val <?php echo $statusColor; ?> fw-bold">
+                                            <i class="bi <?php echo $isLate ? 'bi-exclamation-circle-fill' : 'bi-check-circle-fill'; ?> me-1"></i>
+                                            <?php echo date('d M Y', strtotime($row['actual_return_date'])); ?>
+                                            <?php if ($isLate): ?>
+                                                <small class="d-block" style="font-size: 0.65rem;">(LATE RETURN)</small>
+                                            <?php endif; ?>
+                                        </span>
+                                    <?php endif; ?>
                                     </div>
                                 </td>
 
