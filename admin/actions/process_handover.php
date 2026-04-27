@@ -65,6 +65,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             $pdo->commit();
 
+            // --- Ambil the unique tag nama ---
+            $stmtActualTag = $pdo->prepare("SELECT unique_tag FROM asset_tags WHERE tag_id = ?");
+            $stmtActualTag->execute([$tag_id]);
+            $tagRow = $stmtActualTag->fetch();
+            $display_tag = $tagRow ? $tagRow['unique_tag'] : "Unknown Tag";
+
+
             // 5. TRIGGER EMAIL NOTIFICATION
             $subject = ($newStatus === 'Issued') ? "Item Issued - Nuqtah System" : "Equipment Handover Confirmed - Nuqtah";
 
@@ -86,7 +93,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </tr>
                         <tr>
                             <td style='padding: 8px 0; color: #64748b; font-size: 13px;'>Tag ID</td>
-                            <td style='padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 600; text-align: right;'><code>$tag_id</code></td>
+                            <td style='padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 600; text-align: right;'>
+                                <code style='background-color: #f1f5f9; padding: 2px 4px; border-radius: 4px;'>$display_tag</code>
+                            </td>
                         </tr>
                         <tr>
                             <td style='padding: 8px 0; color: #64748b; font-size: 13px;'>Return Due</td>
