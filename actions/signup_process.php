@@ -47,10 +47,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['signup_btn'])) {
     
     try {
         $stmt->execute([$full_name, $username, $email, $password, $role, $status, $token]);
-
-        // 4. Send the Verification Email
-        $activateLink = "http://localhost/Nuqtah_IT/actions/activate.php?token=$token";
         
+        // 1. Get the base URL from your env (loaded via db_connect.php)
+        $baseUrl = $_ENV['APP_URL'] ?? 'http://localhost/Nuqtah_IT';
+
+        // 2. Build the link using that base
+        $activateLink = $baseUrl . "/actions/activate.php?token=$token";
+
         $subject = "Verify Your Nuqtah Account";
         $message = "
             <h3>Welcome to Nuqtah, $full_name!</h3>
