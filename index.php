@@ -14,8 +14,7 @@ session_start();
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 
-<style
->/* Add this inside your <style> block */
+<style>
 header img {
     transition: transform 0.3s ease;
 }

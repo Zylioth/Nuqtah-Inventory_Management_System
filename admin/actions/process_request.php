@@ -8,9 +8,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
     exit();
 }
 
-$request_id = $_GET['id'] ?? null;
-$action = $_GET['action'] ?? $_GET['status'] ?? null;
-$note = $_GET['note'] ?? '';
+$request_id = $_REQUEST['id'] ?? null;
+$action = $_REQUEST['action'] ?? $_REQUEST['status'] ?? null;
+$note = $_REQUEST['note'] ?? '';
 
 if ($request_id && $action) {
     try {
