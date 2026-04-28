@@ -93,7 +93,7 @@ header img:hover {
             <div class="card landing-card h-100 border-0 shadow-sm p-4">
                 <i class="fas fa-exchange-alt feature-icon"></i>
                 <h4 class="fw-bold">Borrow & Return</h4>
-                <p class="text-muted small">Easily request to borrow and return IT assets.</p>
+                <p class="text-muted small">Move away from manual paper forms. Submit digital requests in seconds and track your return deadlines automatically.</p>
             </div>
         </div>
         <div class="col-md-4">
@@ -106,7 +106,7 @@ header img:hover {
         <div class="col-md-4">
             <div class="card landing-card h-100 border-0 shadow-sm p-4">
                 <i class="fas fa-map-marker-alt feature-icon"></i>
-                <h4 class="fw-bold">Track</h4>
+                <h4 class="fw-bold">Real-time Tracking</h4>
                 <p class="text-muted small">Monitor real-time stock levels and the location of all borrowed IT assets.</p>
             </div>
         </div>

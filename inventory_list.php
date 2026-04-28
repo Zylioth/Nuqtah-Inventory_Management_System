@@ -102,6 +102,8 @@ $assets = $stmt->fetchAll();
         <button class="btn btn-outline-dark bg-white rounded-3 px-4 filter-btn" onclick="filterCategory('Laptops', this)"><i class="bi bi-laptop me-2"></i> Laptops</button>
         <button class="btn btn-outline-dark bg-white rounded-3 px-4 filter-btn" onclick="filterCategory('Projectors', this)"><i class="bi bi-projector me-2"></i> Projectors</button>
         <button class="btn btn-outline-dark bg-white rounded-3 px-4 filter-btn" onclick="filterCategory('Accessories', this)"><i class="bi bi-plugin me-2"></i> Accessories</button>
+        <button class="btn btn-outline-dark bg-white rounded-3 px-4 filter-btn" onclick="filterCategory('Consumables', this)"><i class="bi bi-box-seam me-2"></i> Consumables</button>
+        <button class="btn btn-outline-dark bg-white rounded-3 px-4 filter-btn" onclick="filterCategory('Others', this)"><i class="bi bi-three-dots me-2"></i> Others</button>
     </div>
 
     <div class="row g-4" id="inventoryGrid">

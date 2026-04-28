@@ -130,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     <option value="Projectors">Projectors</option>
                                     <option value="Accessories">Accessories</option>
                                     <option value="Consumables">Consumables</option>
-                                    <option value="Stationery">Stationery</option>
+                                    <option value="Others">Others</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
