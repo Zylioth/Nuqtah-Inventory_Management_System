@@ -15,12 +15,49 @@ session_start();
 </head>
 
 <style>
+/* --- Desktop & General Styles --- */
 header img {
     transition: transform 0.3s ease;
 }
 
-header img:hover {
-    transform: scale(1.05);
+/* Force the container to fit the screen width */
+.hero-section .container {
+    max-width: 100%;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+/* --- Mobile Specific Fix (iPhone 11 Pro) --- */
+@media (max-width: 768px) {
+    /* 1. Make the logo wrapper wrap items if they don't fit */
+    .d-flex.align-items-center.justify-content-center.mb-4 {
+        flex-wrap: wrap; 
+        flex-direction: row; /* Keep them side by side but allowed to shrink */
+    }
+
+    /* 2. Scale down the Nuqtah Logo */
+    .hero-section img[alt="Nuqtah Logo"] {
+        height: 50px !important; 
+        width: auto;
+    }
+
+    /* 3. Scale down the ITQSHHB Logo */
+    .hero-section img[alt="ITQSHHB Logo"] {
+        height: 60px !important;
+        width: auto;
+    }
+
+    /* 4. Shrink the divider and margins so they don't push logos off-screen */
+    .hero-section div[style*="width: 2px"] {
+        height: 40px !important;
+        margin: 0 15px !important; /* Cut margin in half (30px -> 15px) */
+    }
+
+    /* 5. Adjust the lead text so it doesn't look too big compared to logos */
+    .hero-section .lead {
+        font-size: 1.1rem !important;
+        line-height: 1.4;
+    }
 }
 </style>
 

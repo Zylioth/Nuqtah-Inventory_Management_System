@@ -156,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <label class="form-label fw-bold">Category</label>
                                 <select name="category" class="form-select py-3 bg-light border-0 shadow-none" required>
                                     <?php 
-                                    $cats = ["Laptops", "Projectors", "Accessories", "Consumables", "Stationery"];
+                                    $cats = ["Laptops", "Projectors", "Accessories", "Consumables", "Others"];
                                     foreach($cats as $cat) {
                                         $selected = ($asset['category'] == $cat) ? "selected" : "";
                                         echo "<option value='$cat' $selected>$cat</option>";
