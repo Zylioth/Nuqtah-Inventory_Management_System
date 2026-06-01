@@ -1,7 +1,7 @@
 <?php
 // ... after your successful loop that inserts into borrowing_requests ...
 
-if ($success) { // If the database insert worked
+if (!empty($success)) { // If the database insert worked
     include_once '../includes/mail_helper.php';
     
     // 1. Get User Details (You likely have these in $_SESSION)

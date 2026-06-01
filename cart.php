@@ -26,17 +26,27 @@ foreach ($cart_items as $item) {
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user_id = $_SESSION['user_id'];
     $user_name = $_SESSION['full_name'];
     $user_email = $_SESSION['email'];
-    // Capture return date from form, default to null if not provided
+    // Capture return and pickup dates from form
     $form_return_date = !empty($_POST['return_date']) ? $_POST['return_date'] : null;
+    $form_pickup_date = !empty($_POST['pickup_date']) ? $_POST['pickup_date'] : null;
+
+    // Basic validation: pickup date cannot be in the past
+    if ($form_pickup_date) {
+        $today = date('Y-m-d');
+        if ($form_pickup_date < $today) {
+            throw new Exception('Pickup date cannot be in the past.');
+        }
+    }
 
     try {
         $pdo->beginTransaction();
         
-        $insert = $pdo->prepare("INSERT INTO borrowing_requests (user_id, asset_id, quantity, return_date, status) VALUES (?, ?, ?, ?, 'Pending')");
+        // Include pickup_date; if your DB doesn't have this column, add it or let me know
+        $insert = $pdo->prepare("INSERT INTO borrowing_requests (user_id, asset_id, quantity, pickup_date, return_date, status) VALUES (?, ?, ?, ?, ?, 'Pending')");
         
         $emailItemList = "<ul>"; 
 
@@ -52,7 +62,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // If item is a consumable, it doesn't need a return date in the database
             $actualReturnDate = (strtolower($asset['category']) === 'consumables') ? null : $form_return_date;
 
-            $insert->execute([$user_id, $asset_id, $qty, $actualReturnDate]);
+            // For consumables pickup_date still applies; allow null if not provided
+            $actualPickupDate = $form_pickup_date ?: null;
+
+            $insert->execute([$user_id, $asset_id, $qty, $actualPickupDate, $actualReturnDate]);
             
             $emailItemList .= "<li>" . htmlspecialchars($asset['asset_name']) . " (Qty: $qty)</li>";
         }
@@ -60,8 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $emailItemList .= "</ul>";
         $pdo->commit();
 
-        // Prepare return date for emails
+        // Prepare dates for emails
         $displayReturnDate = $onlyConsumables ? "N/A (Consumables)" : ($form_return_date ?? "Not specified");
+        $displayPickupDate = $form_pickup_date ?? date('Y-m-d');
 
         // --- EMAIL NOTIFICATION LOGIC ---
         $userSubject = "Request Received - Nuqtah Inventory";
@@ -69,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p>Hello <b>$user_name</b>,</p>
             <p>Your request for the following items has been submitted:</p>
             $emailItemList
+            <p><b>Expected Pickup:</b> $displayPickupDate</p>
             <p><b>Expected Return:</b> $displayReturnDate</p>
             <p><b>Status:</b> Pending Approval</p>
             <p>Please wait for an official approval email before collecting from the ICT Department.</p>";
@@ -86,6 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p><b>From:</b> $user_name ($user_email)</p>
                 <p><b>Items:</b></p>
                 $emailItemList
+                <p><b>Expected Pickup:</b> $displayPickupDate</p>
                 <p><b>Required Until:</b> $displayReturnDate</p>
                 <br>
                 <a href='http://localhost/Nuqtah_IT/admin/view_requests.php' 
@@ -173,17 +189,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </table>
 
                 <form method="POST" class="mt-4 pt-3 border-top">
-                    <div class="mb-4" id="return_date_section" style="<?php echo $onlyConsumables ? 'display:none;' : ''; ?>">
-                        <label class="form-label fw-bold">Expected Return Date</label>
-                        <input type="date" name="return_date" class="form-control rounded-3" 
-                               <?php echo !$onlyConsumables ? 'required' : ''; ?> 
-                               min="<?php echo date('Y-m-d'); ?>">
-                        <small class="text-muted">Please select when you plan to return the durable items.</small>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Expected Pickup Date</label>
+                            <input type="date" name="pickup_date" class="form-control rounded-3" required 
+                                   min="<?php echo date('Y-m-d'); ?>" value="<?php echo date('Y-m-d'); ?>">
+                            <small class="text-muted">Select when you plan to pick up the items (same-day allowed).</small>
+                        </div>
+
+                        <div class="col-md-6" id="return_date_section" style="<?php echo $onlyConsumables ? 'display:none;' : ''; ?>">
+                            <label class="form-label fw-bold">Expected Return Date</label>
+                            <input type="date" name="return_date" class="form-control rounded-3" 
+                                   <?php echo !$onlyConsumables ? 'required' : ''; ?> 
+                                   min="<?php echo date('Y-m-d'); ?>">
+                            <small class="text-muted">Please select when you plan to return the durable items.</small>
+                        </div>
                     </div>
                     
-                    <button type="submit" class="btn btn-teal w-100 py-3 rounded-pill fw-bold text-white" style="background-color: #00796B;">
-                        Confirm & Submit Request
-                    </button>
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-teal w-100 py-3 rounded-pill fw-bold text-white" style="background-color: #00796B;">
+                            Confirm & Submit Request
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>

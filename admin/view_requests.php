@@ -191,6 +191,15 @@ $requests = $stmt->fetchAll();
                                         <span class="schedule-label">Requested</span>
                                         <span class="schedule-val text-dark"><?php echo date('d M Y', strtotime($row['request_date'])); ?></span>
                                         
+                                        <span class="schedule-label">Pickup On</span>
+                                        <span class="schedule-val">
+                                            <?php if (!empty($row['pickup_date'])): ?>
+                                                <span class="text-primary fw-semibold"><i class="bi bi-calendar2-event me-1"></i><?php echo date('d M Y', strtotime($row['pickup_date'])); ?></span>
+                                            <?php else: ?>
+                                                <span class="text-muted small">Same-day / Not specified</span>
+                                            <?php endif; ?>
+                                        </span>
+                                        
                                         <span class="schedule-label">Issued On</span>
                                         <span class="schedule-val">
                                             <?php if (!empty($row['issued_date'])): ?>
