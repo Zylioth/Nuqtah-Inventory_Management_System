@@ -115,6 +115,7 @@ $assets = $stmt->fetchAll();
                 $image_path = (!empty($row['asset_image']) && file_exists($check_path)) ? "assets/upload/" . $row['asset_image'] : $placeholder;
 
                 $current_stock = $row['current_stock'];
+                $total_stock = $row['total_stock'] ?? null;
                 $category = $row['category'];
                 $low_stock_threshold = 5;
 
@@ -130,7 +131,8 @@ $assets = $stmt->fetchAll();
                 }
             ?>
             <div class="col-md-4 asset-item" data-category="<?php echo htmlspecialchars($category); ?>">
-                <div class="card asset-card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+                <div class="card asset-card border-0 shadow-sm rounded-4 h-100 overflow-hidden" role="button" tabindex="0"
+                     onclick='openAssetModal(<?php echo $row['asset_id']; ?>, <?php echo json_encode($row['asset_name']); ?>, <?php echo json_encode($category); ?>, <?php echo json_encode($display_status); ?>, <?php echo $current_stock; ?>, <?php echo $total_stock !== null ? $total_stock : 'null'; ?>, <?php echo json_encode($image_path); ?>)'>
                     <img src="<?php echo htmlspecialchars($image_path); ?>" 
                          class="card-img-top" 
                          alt="<?php echo htmlspecialchars($row['asset_name']); ?>" 
@@ -145,9 +147,9 @@ $assets = $stmt->fetchAll();
                             <span class="<?php echo $text_class; ?> fw-bold"><?php echo $display_status; ?></span>
                         </div>
 
-                        <form action="actions/add_to_cart.php" method="POST">
+                        <form action="actions/add_to_cart.php" method="POST" onsubmit="event.stopPropagation();">
                             <input type="hidden" name="asset_id" value="<?php echo $row['asset_id']; ?>">
-                            <button type="submit" class="btn btn-teal w-100 rounded-pill py-2 fw-bold" <?php echo !$can_borrow ? 'disabled' : ''; ?>>
+                            <button type="submit" class="btn btn-teal w-100 rounded-pill py-2 fw-bold" <?php echo !$can_borrow ? 'disabled' : ''; ?> onclick="event.stopPropagation();">
                                 <i class="bi bi-cart-plus me-2"></i>
                                 <?php echo $can_borrow ? 'Add to Borrowing Cart' : $display_status; ?>
                             </button>
@@ -221,6 +223,43 @@ $assets = $stmt->fetchAll();
 </div>
 <?php endif; ?>
 
+<!-- Asset detail modal -->
+<div class="modal fade" id="assetDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold" id="assetDetailModalLabel">Asset Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <div class="col-md-5">
+                        <img id="assetDetailImage" src="" alt="Asset Image" class="img-fluid rounded-4 w-100" style="object-fit: cover; height: 300px;">
+                    </div>
+                    <div class="col-md-7">
+                        <p class="text-muted mb-1" id="assetDetailCategory"></p>
+                        <h4 class="fw-bold mb-3" id="assetDetailName"></h4>
+                        <div class="mb-3">
+                            <span class="badge bg-secondary me-2" id="assetDetailStatus"></span>
+                            <span class="text-muted" id="assetDetailStock"></span>
+                        </div>
+                        <div class="small text-muted mb-4">
+                            <strong>Stock Details:</strong> Current stock and total stock are shown here.
+                        </div>
+                        <div id="assetDetailTags" class="border-top pt-3">
+                            <div class="text-center text-muted py-3">Loading tag information...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 justify-content-between">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="cart.php" class="btn btn-teal">Go to Borrowing Cart</a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     // Functional Search and Filter Logic
     let currentCategory = 'all';
@@ -247,6 +286,33 @@ $assets = $stmt->fetchAll();
             const matchesCategory = (currentCategory === 'all' || category === currentCategory);
             item.style.display = (matchesSearch && matchesCategory) ? "block" : "none";
         });
+    }
+
+    function openAssetModal(assetId, assetName, category, displayStatus, currentStock, totalStock, imagePath) {
+        document.getElementById('assetDetailModalLabel').innerText = assetName;
+        document.getElementById('assetDetailName').innerText = assetName;
+        document.getElementById('assetDetailCategory').innerText = category;
+        document.getElementById('assetDetailStatus').innerText = displayStatus;
+        document.getElementById('assetDetailImage').src = imagePath;
+        document.getElementById('assetDetailStock').innerText = totalStock !== null ? `Stock: ${currentStock} / ${totalStock}` : `Stock: ${currentStock}`;
+
+        const tagsContainer = document.getElementById('assetDetailTags');
+        tagsContainer.innerHTML = '<div class="text-center text-muted py-3">Loading tag information...</div>';
+
+        fetch(`admin/actions/get_asset_tags.php?asset_id=${assetId}`)
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.text();
+            })
+            .then(html => {
+                tagsContainer.innerHTML = html;
+            })
+            .catch(() => {
+                tagsContainer.innerHTML = '<div class="text-danger py-3">Tag information is not available.</div>';
+            });
+
+        const modal = new bootstrap.Modal(document.getElementById('assetDetailModal'));
+        modal.show();
     }
 
     // Original SweetAlert scripts kept exactly the same
