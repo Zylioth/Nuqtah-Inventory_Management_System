@@ -13,6 +13,15 @@ $stmt = $pdo->query($query);
 $assets = $stmt->fetchAll();
 
 $low_stock_threshold = 5;
+$categories = array_unique(array_column($assets, 'category'));
+sort($categories);
+$totalAssets = count($assets);
+$lowStockCount = 0;
+foreach ($assets as $row) {
+    if ($row['current_stock'] <= $low_stock_threshold) {
+        $lowStockCount++;
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -77,6 +86,41 @@ $low_stock_threshold = 5;
             </a>
         </div>
 
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="card rounded-4 shadow-sm border-0 h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div>
+                                <h5 class="fw-bold mb-1">Total Assets</h5>
+                                <p class="text-muted mb-0">All inventory records</p>
+                            </div>
+                            <div class="badge bg-teal rounded-pill py-2 px-3 fs-6"><?php echo $totalAssets; ?></div>
+                        </div>
+                        <div class="progress rounded-pill" style="height: 12px; background-color: #e9f3f1;">
+                            <div class="progress-bar bg-teal rounded-pill" role="progressbar" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card rounded-4 shadow-sm border-0 h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div>
+                                <h5 class="fw-bold mb-1">Low Stock Items</h5>
+                                <p class="text-muted mb-0">At or below <?php echo $low_stock_threshold; ?> units</p>
+                            </div>
+                            <div class="badge bg-warning rounded-pill py-2 px-3 fs-6"><?php echo $lowStockCount; ?></div>
+                        </div>
+                        <div class="progress rounded-pill" style="height: 12px; background-color: #fff4e5;">
+                            <div class="progress-bar bg-warning rounded-pill" role="progressbar" style="width: <?php echo $totalAssets > 0 ? ($lowStockCount / $totalAssets) * 100 : 0; ?>%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card rounded-4 mb-4">
             <div class="card-body">
                 <div class="row g-3">
@@ -90,11 +134,9 @@ $low_stock_threshold = 5;
                     <div class="col-md-4">
                         <select class="form-select" id="categoryFilter">
                             <option selected>All Categories</option>
-                            <option>Laptops</option>
-                            <option>Projectors</option>
-                            <option>Accessories</option>
-                            <option>Consumables</option>
-                            <option>Stationery</option>
+                            <?php foreach ($categories as $category): ?>
+                                <option><?php echo htmlspecialchars($category); ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                 </div>
@@ -207,10 +249,15 @@ $low_stock_threshold = 5;
                 <div class="p-3 border-bottom bg-light">
                     <form id="addTagForm" class="row g-2">
                         <input type="hidden" name="asset_id" id="add_tag_asset_id">
-                        <div class="col-8">
-                            <input type="text" name="unique_tag" class="form-control form-control-sm" placeholder="Enter Tag (e.g. ITQSHHB-001L)" required>
+                        <div class="col-md-5">
+                            <input type="text" name="unique_tag" class="form-control form-control-sm" placeholder="Enter Tag (e.g. ITQSHHB-001L)">
                         </div>
-                        <div class="col-4">
+                        <div class="col-md-3 d-grid">
+                            <button type="button" class="btn btn-outline-secondary btn-sm shadow-sm" onclick="generateTag(document.getElementById('add_tag_asset_id').value)">
+                                <i class="bi bi-gear-fill me-1"></i>Generate Tag
+                            </button>
+                        </div>
+                        <div class="col-md-4 d-grid">
                             <button type="submit" class="btn btn-teal btn-sm w-100 shadow-sm">
                                 <i class="bi bi-plus-circle me-1"></i>Add Tag
                             </button>
@@ -262,8 +309,36 @@ document.getElementById('addTagForm').addEventListener('submit', function(e) {
         } else {
             Swal.fire({ title: 'Cannot Add Tag', text: data.message, icon: 'error', confirmButtonColor: '#00796B' });
         }
+    })
+    .catch(() => {
+        Swal.fire({ title: 'Error', text: 'Unable to reach the server.', icon: 'error', confirmButtonColor: '#00796B' });
     });
 });
+
+function generateTag(assetId) {
+    if (!assetId) {
+        Swal.fire({ title: 'Missing Asset', text: 'Please open the tag modal from an asset row first.', icon: 'warning', confirmButtonColor: '#00796B' });
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('asset_id', assetId);
+    formData.append('auto_generate', '1');
+
+    fetch('actions/add_asset_tag.php', { method: 'POST', body: formData })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tag generated: ' + data.unique_tag, showConfirmButton: false, timer: 2200, timerProgressBar: true });
+            loadTags(assetId);
+        } else {
+            Swal.fire({ title: 'Cannot Generate Tag', text: data.message, icon: 'error', confirmButtonColor: '#00796B' });
+        }
+    })
+    .catch(() => {
+        Swal.fire({ title: 'Error', text: 'Unable to reach the server.', icon: 'error', confirmButtonColor: '#00796B' });
+    });
+}
 
 // Delete Tag AJAX
 function deleteTag(tagId, assetId) {
