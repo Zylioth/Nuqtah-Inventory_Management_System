@@ -26,9 +26,59 @@ $latest_request = $notifStmt->fetch();
 $show_status_modal = isset($_SESSION['first_login_session']) && $_SESSION['first_login_session'] && $latest_request;
 // --- NEW NOTIFICATION LOGIC END ---
 
-$stmt = $pdo->query("SELECT * FROM assets");
+$searchTerm = trim($_GET['search'] ?? '');
+$categoryFilter = trim($_GET['category'] ?? 'all');
+$allowedCategories = ['Laptops', 'Projectors', 'Accessories', 'Consumables', 'Others'];
+if ($categoryFilter !== 'all' && !in_array($categoryFilter, $allowedCategories, true)) {
+    $categoryFilter = 'all';
+}
+
+$itemsPerPage = 10;
+$page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
+$whereClauses = [];
+$queryParams = [];
+
+if ($searchTerm !== '') {
+    $whereClauses[] = '(asset_name LIKE :search_name OR category LIKE :search_category)';
+    $queryParams[':search_name'] = "%{$searchTerm}%";
+    $queryParams[':search_category'] = "%{$searchTerm}%";
+}
+
+if ($categoryFilter !== 'all') {
+    $whereClauses[] = 'category = :category';
+    $queryParams[':category'] = $categoryFilter;
+}
+
+$whereSql = $whereClauses ? 'WHERE ' . implode(' AND ', $whereClauses) : '';
+
+$countStmt = $pdo->prepare("SELECT COUNT(*) FROM assets {$whereSql}");
+foreach ($queryParams as $param => $value) {
+    $countStmt->bindValue($param, $value, PDO::PARAM_STR);
+}
+$countStmt->execute();
+$totalItems = (int) $countStmt->fetchColumn();
+$totalPages = max(1, (int) ceil($totalItems / $itemsPerPage));
+
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
+
+$offset = ($page - 1) * $itemsPerPage;
+
+$stmt = $pdo->prepare("SELECT * FROM assets {$whereSql} ORDER BY asset_name ASC LIMIT :limit OFFSET :offset");
+foreach ($queryParams as $param => $value) {
+    $stmt->bindValue($param, $value, PDO::PARAM_STR);
+}
+$stmt->bindValue(':limit', $itemsPerPage, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->execute();
 $assets = $stmt->fetchAll();
+
+$firstItem = $totalItems > 0 ? $offset + 1 : 0;
+$lastItem = min($offset + count($assets), $totalItems);
+$queryBase = ['search' => $searchTerm, 'category' => $categoryFilter];
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -42,14 +92,107 @@ $assets = $stmt->fetchAll();
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="assets/css/styles.css">
     <style>
+        :root {
+            --brand-teal: #00796B;
+            --brand-teal-dark: #005a4d;
+            --brand-soft: #edf7f4;
+        }
+
         .text-warning { color: #F57C00 !important; }
         .bg-warning { background-color: #F57C00 !important; }
-        .bg-teal { background-color: #00796B !important; }
-        .btn-teal { background-color: #00796B; border: none; transition: 0.3s; color: white; }
-        .btn-teal:hover { background-color: #004D40; color: white; }
-        .asset-card { transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer; }
-        .asset-card:hover { transform: translateY(-10px); box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important; }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .bg-teal { background-color: var(--brand-teal) !important; }
+
+        .btn-teal {
+            background-color: var(--brand-teal);
+            border: none;
+            color: #fff;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+            transition: transform 0.25s ease, background-color 0.25s ease;
+        }
+        .btn-teal:hover,
+        .btn-teal:focus {
+            background-color: var(--brand-teal-dark);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .btn-outline-teal {
+            color: var(--brand-teal);
+            border: 1px solid var(--brand-teal);
+            background-color: #fff;
+            transition: background-color 0.25s ease, color 0.25s ease;
+        }
+        .btn-outline-teal:hover,
+        .btn-outline-teal.active {
+            background-color: var(--brand-teal);
+            color: #fff;
+            border-color: var(--brand-teal);
+        }
+
+        .search-card {
+            background: #fff;
+            border-radius: 50px;
+            padding: 18px 22px;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.06);
+        }
+        .search-card .form-control {
+            border: none;
+            box-shadow: none;
+            min-height: 50px;
+            font-size: 1rem;
+        }
+        .search-card .form-control:focus {
+            box-shadow: none;
+            border-color: rgba(0, 121, 107, 0.35);
+        }
+
+        .asset-card {
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            cursor: pointer;
+            border-radius: 24px;
+            overflow: hidden;
+        }
+        .asset-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 16px 35px rgba(0, 0, 0, 0.12) !important;
+        }
+        .asset-card img {
+            transition: transform 0.35s ease;
+        }
+        .asset-card:hover img {
+            transform: scale(1.03);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .asset-card .card-body {
+            padding: 1.75rem 1.5rem;
+        }
+        .asset-name {
+            min-height: 3rem;
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: var(--brand-teal);
+            border-color: var(--brand-teal);
+        }
+        .pagination .page-link {
+            color: var(--brand-teal);
+        }
+        .pagination .page-link:hover {
+            background-color: rgba(0, 121, 107, 0.1);
+        }
+
+        .badge-status {
+            border-radius: 999px;
+            padding: 0.35rem 0.85rem;
+            font-size: 0.82rem;
+        }
+
         .x-small { font-size: 0.75rem; }
     </style>
 </head>
@@ -91,19 +234,24 @@ $assets = $stmt->fetchAll();
 </div>
 
 <div class="container mt-4">
-    <div class="row justify-content-center mb-4">
+    <form method="GET" action="" class="row justify-content-center mb-4">
         <div class="col-md-10">
-            <input type="text" id="searchInput" class="form-control rounded-pill border-secondary px-4 py-2" placeholder="Search for equipment....." onkeyup="filterInventory()">
+            <div class="search-card d-flex align-items-center gap-3">
+                <i class="bi bi-search fs-4 text-secondary"></i>
+                <input type="text" name="search" value="<?php echo htmlspecialchars($searchTerm); ?>" class="form-control rounded-pill" placeholder="Search for equipment...">
+                <input type="hidden" name="category" value="<?php echo htmlspecialchars($categoryFilter); ?>">
+                <button type="submit" class="btn btn-teal rounded-pill px-4">Search</button>
+            </div>
         </div>
-    </div>
+    </form>
 
     <div class="d-flex flex-wrap justify-content-center gap-2 mb-5">
-        <button class="btn btn-teal rounded-3 px-4 filter-btn" onclick="filterCategory('all', this)">All Equipment</button>
-        <button class="btn btn-outline-dark bg-white rounded-3 px-4 filter-btn" onclick="filterCategory('Laptops', this)"><i class="bi bi-laptop me-2"></i> Laptops</button>
-        <button class="btn btn-outline-dark bg-white rounded-3 px-4 filter-btn" onclick="filterCategory('Projectors', this)"><i class="bi bi-projector me-2"></i> Projectors</button>
-        <button class="btn btn-outline-dark bg-white rounded-3 px-4 filter-btn" onclick="filterCategory('Accessories', this)"><i class="bi bi-plugin me-2"></i> Accessories</button>
-        <button class="btn btn-outline-dark bg-white rounded-3 px-4 filter-btn" onclick="filterCategory('Consumables', this)"><i class="bi bi-box-seam me-2"></i> Consumables</button>
-        <button class="btn btn-outline-dark bg-white rounded-3 px-4 filter-btn" onclick="filterCategory('Others', this)"><i class="bi bi-three-dots me-2"></i> Others</button>
+        <a href="?<?php echo http_build_query(array_merge($queryBase, ['category' => 'all', 'page' => 1])); ?>" class="btn rounded-3 px-4 <?php echo ($categoryFilter === 'all') ? 'btn-teal' : 'btn-outline-teal'; ?>">All Equipment</a>
+        <a href="?<?php echo http_build_query(array_merge($queryBase, ['category' => 'Laptops', 'page' => 1])); ?>" class="btn rounded-3 px-4 <?php echo ($categoryFilter === 'Laptops') ? 'btn-teal' : 'btn-outline-teal'; ?>"><i class="bi bi-laptop me-2"></i> Laptops</a>
+        <a href="?<?php echo http_build_query(array_merge($queryBase, ['category' => 'Projectors', 'page' => 1])); ?>" class="btn rounded-3 px-4 <?php echo ($categoryFilter === 'Projectors') ? 'btn-teal' : 'btn-outline-teal'; ?>"><i class="bi bi-projector me-2"></i> Projectors</a>
+        <a href="?<?php echo http_build_query(array_merge($queryBase, ['category' => 'Accessories', 'page' => 1])); ?>" class="btn rounded-3 px-4 <?php echo ($categoryFilter === 'Accessories') ? 'btn-teal' : 'btn-outline-teal'; ?>"><i class="bi bi-plugin me-2"></i> Accessories</a>
+        <a href="?<?php echo http_build_query(array_merge($queryBase, ['category' => 'Consumables', 'page' => 1])); ?>" class="btn rounded-3 px-4 <?php echo ($categoryFilter === 'Consumables') ? 'btn-teal' : 'btn-outline-teal'; ?>"><i class="bi bi-box-seam me-2"></i> Consumables</a>
+        <a href="?<?php echo http_build_query(array_merge($queryBase, ['category' => 'Others', 'page' => 1])); ?>" class="btn rounded-3 px-4 <?php echo ($categoryFilter === 'Others') ? 'btn-teal' : 'btn-outline-teal'; ?>"><i class="bi bi-three-dots me-2"></i> Others</a>
     </div>
 
     <div class="row g-4" id="inventoryGrid">
@@ -147,6 +295,13 @@ $assets = $stmt->fetchAll();
                             <span class="<?php echo $text_class; ?> fw-bold"><?php echo $display_status; ?></span>
                         </div>
 
+                        <div class="d-flex align-items-center justify-content-between asset-meta mb-3">
+                            <span class="badge badge-status bg-light text-secondary">Current <?php echo $current_stock; ?></span>
+                            <?php if ($total_stock !== null): ?>
+                                <span class="badge badge-status bg-light text-secondary">Total <?php echo $total_stock; ?></span>
+                            <?php endif; ?>
+                        </div>
+
                         <form action="actions/add_to_cart.php" method="POST" onsubmit="event.stopPropagation();">
                             <input type="hidden" name="asset_id" value="<?php echo $row['asset_id']; ?>">
                             <button type="submit" class="btn btn-teal w-100 rounded-pill py-2 fw-bold" <?php echo !$can_borrow ? 'disabled' : ''; ?> onclick="event.stopPropagation();">
@@ -164,6 +319,31 @@ $assets = $stmt->fetchAll();
         </div>
     <?php endif; ?>
     </div>
+
+    <?php if ($totalPages > 1): ?>
+        <div class="row">
+            <div class="col-12 d-flex flex-column flex-sm-row align-items-center justify-content-between mt-4">
+                <div class="text-muted small mb-3 mb-sm-0">
+                    Showing <?php echo $firstItem; ?> to <?php echo $lastItem; ?> of <?php echo $totalItems; ?> items
+                </div>
+                <nav aria-label="Inventory pagination">
+                    <ul class="pagination mb-0">
+                        <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
+                            <a class="page-link" href="?page=<?php echo max(1, $page - 1); ?>" tabindex="-1">Previous</a>
+                        </li>
+                        <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+                            <li class="page-item <?php echo ($p === $page) ? 'active' : ''; ?>">
+                                <a class="page-link" href="?page=<?php echo $p; ?>"><?php echo $p; ?></a>
+                            </li>
+                        <?php endfor; ?>
+                        <li class="page-item <?php echo ($page >= $totalPages) ? 'disabled' : ''; ?>">
+                            <a class="page-link" href="?page=<?php echo min($totalPages, $page + 1); ?>">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    <?php endif; ?>
 </div>
 
 <?php if ($user_role === 'Admin'): ?>
@@ -261,33 +441,6 @@ $assets = $stmt->fetchAll();
 </div>
 
 <script>
-    // Functional Search and Filter Logic
-    let currentCategory = 'all';
-
-    function filterCategory(category, btn) {
-        currentCategory = category;
-        document.querySelectorAll('.filter-btn').forEach(b => {
-            b.classList.remove('btn-teal');
-            b.classList.add('btn-outline-dark', 'bg-white');
-        });
-        btn.classList.add('btn-teal');
-        btn.classList.remove('btn-outline-dark', 'bg-white');
-        filterInventory();
-    }
-
-    function filterInventory() {
-        const searchTerm = document.getElementById("searchInput").value.toLowerCase();
-        const items = document.querySelectorAll(".asset-item");
-
-        items.forEach(item => {
-            const name = item.querySelector(".asset-name").innerText.toLowerCase();
-            const category = item.getAttribute("data-category");
-            const matchesSearch = name.includes(searchTerm);
-            const matchesCategory = (currentCategory === 'all' || category === currentCategory);
-            item.style.display = (matchesSearch && matchesCategory) ? "block" : "none";
-        });
-    }
-
     function openAssetModal(assetId, assetName, category, displayStatus, currentStock, totalStock, imagePath) {
         document.getElementById('assetDetailModalLabel').innerText = assetName;
         document.getElementById('assetDetailName').innerText = assetName;
