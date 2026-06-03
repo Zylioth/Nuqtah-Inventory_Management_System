@@ -65,6 +65,10 @@
             <a href="my_requests.php" class="list-group-item list-group-item-action <?php echo ($current_page == 'my_requests.php') ? 'active' : ''; ?>">
                 <i class="bi bi-clock-history me-3"></i>My Requests
             </a>
+
+            <a href="change_password.php" class="list-group-item list-group-item-action <?php echo ($current_page == 'change_password.php') ? 'active' : ''; ?>">
+                <i class="bi bi-key-fill me-3"></i>Change Password
+            </a>
             
             <hr class="mx-4">
             
