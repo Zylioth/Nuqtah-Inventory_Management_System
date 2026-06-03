@@ -10,6 +10,7 @@ session_start();
     <title>Nuqtah Inventory System - Login</title>
     <link rel="icon" type="image/png" href="/Nuqtah_IT/assets/img/Nuqtah_logo_small.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="assets/css/styles.css">
     <style>
         .btn-teal { background-color: #00796B; color: white; }
@@ -33,6 +34,12 @@ session_start();
             <?php if (isset($_GET['signup']) && $_GET['signup'] == 'success'): ?>
                 <div class="alert alert-success small text-center rounded-4 border-0 shadow-sm" role="alert">
                     <i class="bi bi-check-circle-fill me-2"></i> Account created. Please wait for admin approval.
+                </div>
+            <?php endif; ?>
+
+            <?php if (isset($_GET['reset']) && $_GET['reset'] == 'success'): ?>
+                <div class="alert alert-success small text-center rounded-4 border-0 shadow-sm" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i> Password updated successfully. Please log in.
                 </div>
             <?php endif; ?>
 
@@ -62,8 +69,11 @@ session_start();
                     <input type="password" name="password" class="form-control rounded-pill border-dark px-3" placeholder="Enter Your Password" required>
                 </div>
                 
-                <button type="submit" name="login_btn" class="btn btn-teal w-100 rounded-pill text-white fw-bold mb-3 py-2 shadow-sm">LOGIN</button>
-                
+                <button type="submit" name="login_btn" class="btn btn-teal w-100 rounded-pill text-white fw-bold mb-2 py-2 shadow-sm">LOGIN</button>
+                <div class="text-center mb-3">
+                    <a href="forgot_password.php" class="text-decoration-none small">Forgot password?</a>
+                </div>
+
                 <div class="text-center small">
                     <span class="text-muted">Don't have an account?</span> 
                     <a href="signup.php" class="text-primary text-decoration-none fw-bold">Sign Up</a>
