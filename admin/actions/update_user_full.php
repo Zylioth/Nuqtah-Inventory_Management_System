@@ -6,12 +6,28 @@ include_once '../../includes/mail_helper.php';
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') exit('Unauthorized');
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // CSRF check
+    if (empty($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        header("Location: ../manage_users.php?msg=error"); exit();
+    }
+
     $user_id = $_POST['user_id'];
-    $full_name = $_POST['full_name'];
-    $username = $_POST['username'];
-    $email = $_POST['email'];
-    $new_role = $_POST['role'];
-    $new_status = $_POST['account_status']; 
+    $full_name = trim($_POST['full_name'] ?? '');
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $new_role = trim($_POST['role'] ?? 'Student');
+    $new_status = trim($_POST['account_status'] ?? 'Active'); 
+
+    // basic validation
+    if (strlen($username) < 3 || strlen($full_name) < 2) { header("Location: ../manage_users.php?msg=error"); exit(); }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) { header("Location: ../manage_users.php?msg=error"); exit(); }
+
+    // Check for duplicates (username or email) excluding this user
+    $checkDup = $pdo->prepare("SELECT user_id FROM users WHERE (username = ? OR email = ?) AND user_id != ?");
+    $checkDup->execute([$username, $email, $user_id]);
+    if ($checkDup->rowCount() > 0) {
+        header("Location: ../manage_users.php?msg=exists"); exit();
+    }
 
     // Safety checks for the current Admin (prevent self-lockout)
     if ($user_id == $_SESSION['user_id']) {

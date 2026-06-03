@@ -7,6 +7,15 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
     exit();
 }
 
+// Ensure CSRF token for admin forms
+if (empty($_SESSION['csrf_token'])) {
+    try {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    } catch (Exception $e) {
+        $_SESSION['csrf_token'] = bin2hex(openssl_random_pseudo_bytes(32));
+    }
+}
+
 // Fetch all users - Added account_status to the SELECT query
 $query = "SELECT user_id, full_name, username, email, role, account_status, created_at FROM users ORDER BY created_at DESC";
 $stmt = $pdo->query($query);
@@ -182,6 +191,7 @@ $users = $stmt->fetchAll();
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="actions/add_users.php" method="POST">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Full Name</label>
@@ -227,6 +237,7 @@ $users = $stmt->fetchAll();
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="actions/update_user_full.php" method="POST">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                 <div class="modal-body p-4">
                     <input type="hidden" name="user_id" id="edit_user_id">
                     <div class="mb-3">
@@ -306,9 +317,42 @@ function editUser(user) {
 
 function confirmDelete(user) {
     document.getElementById('delete_user_name').innerText = user.name;
-    document.getElementById('delete_confirm_btn').href = `actions/delete_user.php?id=${user.id}`;
+    // store id on the delete button and let the click handler POST the request with CSRF
+    document.getElementById('delete_confirm_btn').setAttribute('data-user-id', user.id);
     new bootstrap.Modal(document.getElementById('deleteConfirmModal')).show();
 }
+
+// Handle delete button click: perform POST with CSRF token
+document.addEventListener('DOMContentLoaded', function () {
+    var delBtn = document.getElementById('delete_confirm_btn');
+    if (delBtn) {
+        delBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            var id = this.getAttribute('data-user-id');
+            if (!id) return;
+
+            // create and submit form
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'actions/delete_user.php';
+
+            var inputId = document.createElement('input');
+            inputId.type = 'hidden';
+            inputId.name = 'id';
+            inputId.value = id;
+            form.appendChild(inputId);
+
+            var inputCsrf = document.createElement('input');
+            inputCsrf.type = 'hidden';
+            inputCsrf.name = 'csrf_token';
+            inputCsrf.value = '<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>';
+            form.appendChild(inputCsrf);
+
+            document.body.appendChild(form);
+            form.submit();
+        });
+    }
+});
 
 function filterUsers() {
     const input = document.getElementById("userSearch");

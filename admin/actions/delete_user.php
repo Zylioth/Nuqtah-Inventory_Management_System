@@ -7,9 +7,14 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
     exit('Unauthorized Access');
 }
 
-if (isset($_GET['id'])) {
-    $target_id = $_GET['id'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
+    $target_id = $_POST['id'];
     $current_admin = $_SESSION['user_id'];
+
+    // CSRF validation
+    if (empty($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        header("Location: ../manage_users.php?msg=error"); exit();
+    }
 
     // 2. Prevent Self-Deletion (Safety Lock)
     if ($target_id == $current_admin) {
@@ -33,7 +38,7 @@ if (isset($_GET['id'])) {
         exit();
     }
 } else {
-    // If no ID is provided, just go back
+    // If no ID is provided or wrong method, just go back
     header("Location: ../manage_users.php");
     exit();
 }
