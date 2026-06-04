@@ -8,14 +8,31 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
 }
 
 // Fetch all assets ordered by category
-$query = "SELECT * FROM assets ORDER BY category ASC, asset_name ASC";
-$stmt = $pdo->query($query);
+$low_stock_threshold = 5;
+$itemsPerPage = 20;
+$page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
+
+// Get total count
+$countStmt = $pdo->query("SELECT COUNT(*) FROM assets");
+$totalAssets = (int) $countStmt->fetchColumn();
+$totalPages = max(1, (int) ceil($totalAssets / $itemsPerPage));
+
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
+
+$offset = ($page - 1) * $itemsPerPage;
+
+// Fetch paginated assets
+$query = "SELECT * FROM assets ORDER BY category ASC, asset_name ASC LIMIT :limit OFFSET :offset";
+$stmt = $pdo->prepare($query);
+$stmt->bindValue(':limit', $itemsPerPage, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->execute();
 $assets = $stmt->fetchAll();
 
-$low_stock_threshold = 5;
 $categories = array_unique(array_column($assets, 'category'));
 sort($categories);
-$totalAssets = count($assets);
 $lowStockCount = 0;
 foreach ($assets as $row) {
     if ($row['current_stock'] <= $low_stock_threshold) {
@@ -39,7 +56,7 @@ foreach ($assets as $row) {
         :root { --teal-primary: #00796B; --teal-dark: #004D40; }
         body { background-color: #f8f9fa; font-family: 'Inter', sans-serif; }
         .main-content { padding: 40px 0; }
-        .inventory-container { max-width: 1300px; margin: 0 auto; }
+        .inventory-container { max-width: 1500px; margin: 0 auto; }
         .asset-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; }
         .badge-low { background-color: #FFF3E0; color: #E65100; border: 1px solid #FFE0B2; }
         .text-teal { color: var(--teal-primary) !important; }
@@ -48,6 +65,28 @@ foreach ($assets as $row) {
         .table-hover tbody tr:hover { background-color: #f0f7f6; transition: 0.2s; }
         .btn-teal { background-color: var(--teal-primary); color: white; border: none; }
         .btn-teal:hover { background-color: var(--teal-dark); color: white; }
+
+        .inventory-container { padding: 0 1rem; }
+        .asset-name-cell { word-break: break-word; }
+        .asset-tag-btn { display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.4rem; padding: 0.2rem 0.35rem; }
+        .action-buttons { display: flex; justify-content: flex-end; gap: 0.35rem; flex-wrap: wrap; }
+
+        .pagination .page-item.active .page-link {
+            background-color: var(--teal-primary);
+            border-color: var(--teal-primary);
+        }
+        .pagination .page-link {
+            color: var(--teal-primary);
+        }
+        .pagination .page-link:hover {
+            background-color: rgba(0, 121, 107, 0.1);
+        }
+
+            .asset-thumb { width: 40px; height: 40px; }
+            .asset-tag-btn { width: 100%; justify-content: flex-start; }
+            .action-buttons { justify-content: flex-end; }
+            .table-responsive { overflow-x: auto; }
+        }
     </style>
 </head>
 <body>
@@ -71,19 +110,17 @@ foreach ($assets as $row) {
         });
         </script>
 
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
-            <div>
-                <div class="d-flex align-items-center gap-3">
-                    <a href="index.php" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-                        <i class="bi bi-arrow-left"></i> Dashboard
-                    </a>
-                    <h2 class="fw-bold mb-0">Inventory Management</h2>
-                </div>
-                <p class="text-muted mt-2 mb-0 ms-md-5 ps-md-4">Overview of ITQSHHB assets and equipment stock.</p>
-            </div>
+        <div class="d-flex align-items-center justify-content-between mb-2 gap-3">
+            <a href="index.php" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                <i class="bi bi-arrow-left"></i> Dashboard
+            </a>
             <a href="add_assets.php" class="btn btn-teal rounded-pill px-4 py-2 shadow-sm">
                 <i class="bi bi-plus-lg me-2"></i> Add New Asset
             </a>
+        </div>
+        <div class="mb-4">
+            <h2 class="fw-bold mb-1">Inventory Management</h2>
+            <p class="text-muted mb-0">Overview of ITQSHHB assets and equipment stock.</p>
         </div>
 
         <div class="row g-3 mb-4">
@@ -150,8 +187,8 @@ foreach ($assets as $row) {
                         <tr>
                             <th class="ps-4 py-3">Image</th>
                             <th>Asset Name</th>
-                            <th>Category</th>
-                            <th>Stock (Current / Total)</th>
+                            <th class="d-none d-md-table-cell">Category</th>
+                            <th class="d-none d-lg-table-cell">Stock (Current / Total)</th>
                             <th>Status</th>
                             <th class="text-end pe-4">Actions</th>
                         </tr>
@@ -180,18 +217,17 @@ foreach ($assets as $row) {
                                 <td class="ps-4">
                                     <img src="<?php echo $img; ?>" class="asset-thumb border" alt="Asset">
                                 </td>
-                                <td>
+                                <td class="asset-name-cell">
                                     <div class="fw-bold text-dark"><?php echo htmlspecialchars($row['asset_name']); ?></div>
                                     <small class="text-muted">ID: #<?php echo str_pad($row['asset_id'], 4, '0', STR_PAD_LEFT); ?></small>
-                                    <br>
-                                    <button class="btn btn-link btn-sm p-0 text-decoration-none fw-bold" 
+                                    <button class="btn btn-link btn-sm p-0 text-decoration-none fw-bold asset-tag-btn" 
                                             onclick="viewAssetTags(<?php echo $row['asset_id']; ?>, '<?php echo addslashes($row['asset_name']); ?>')"
                                             style="color: var(--teal-primary); font-size: 0.75rem;">
-                                        <i class="bi bi-tag-fill me-1"></i>View Asset Tags
+                                        <i class="bi bi-tag-fill"></i> View Asset Tags
                                     </button>
                                 </td>
-                                <td><span class="badge bg-light text-dark border"><?php echo $row['category']; ?></span></td>
-                                <td>
+                                <td class="d-none d-md-table-cell"><span class="badge bg-light text-dark border"><?php echo $row['category']; ?></span></td>
+                                <td class="d-none d-lg-table-cell">
                                     <span class="fw-bold text-dark"><?php echo $current; ?></span> 
                                     <span class="text-muted">/ <?php echo $total; ?></span>
                                     <div class="progress mt-1" style="height: 5px; width: 80px;">
@@ -203,8 +239,8 @@ foreach ($assets as $row) {
                                     </div>
                                 </td>
                                 <td><span class="badge <?php echo $badge_class; ?> rounded-pill px-3"><?php echo $status_label; ?></span></td>
-                                <td class="text-end pe-4">
-                                    <a href="edit_asset.php?id=<?php echo $row['asset_id']; ?>" class="btn btn-light btn-sm border me-1">
+                                <td class="text-end pe-4 action-buttons">
+                                    <a href="edit_asset.php?id=<?php echo $row['asset_id']; ?>" class="btn btn-light btn-sm border">
                                         <i class="bi bi-pencil text-dark"></i>
                                     </a>
                                     <button class="btn btn-light btn-sm border text-danger" onclick="showDeleteModal(<?php echo $row['asset_id']; ?>)">
@@ -217,6 +253,31 @@ foreach ($assets as $row) {
                 </table>
             </div>
         </div>
+
+        <?php if ($totalPages > 1): ?>
+        <div class="row mt-4">
+            <div class="col-12 d-flex flex-column flex-sm-row align-items-center justify-content-between">
+                <div class="text-muted small mb-3 mb-sm-0">
+                    Showing <?php echo ($offset + 1); ?> to <?php echo min($offset + count($assets), $totalAssets); ?> of <?php echo $totalAssets; ?> items
+                </div>
+                <nav aria-label="Asset pagination">
+                    <ul class="pagination mb-0">
+                        <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
+                            <a class="page-link" href="?page=<?php echo max(1, $page - 1); ?>" tabindex="-1">Previous</a>
+                        </li>
+                        <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+                            <li class="page-item <?php echo ($p === $page) ? 'active' : ''; ?>">
+                                <a class="page-link" href="?page=<?php echo $p; ?>"><?php echo $p; ?></a>
+                            </li>
+                        <?php endfor; ?>
+                        <li class="page-item <?php echo ($page >= $totalPages) ? 'disabled' : ''; ?>">
+                            <a class="page-link" href="?page=<?php echo min($totalPages, $page + 1); ?>">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 
