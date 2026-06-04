@@ -452,7 +452,7 @@ $queryBase = ['search' => $searchTerm, 'category' => $categoryFilter];
         const tagsContainer = document.getElementById('assetDetailTags');
         tagsContainer.innerHTML = '<div class="text-center text-muted py-3">Loading tag information...</div>';
 
-        fetch(`admin/actions/get_asset_tags.php?asset_id=${assetId}`)
+        fetch(`admin/actions/get_asset_tags.php?asset_id=${assetId}&show_actions=0`)
             .then(response => {
                 if (!response.ok) throw new Error('Network response was not ok');
                 return response.text();
