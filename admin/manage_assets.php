@@ -305,13 +305,15 @@ $lowStockCount = (int) $lowStockStmt->fetchColumn();
                                         </div>
                                     </td>
                                     <td><span class="badge <?php echo $badge_class; ?> rounded-pill px-3"><?php echo $status_label; ?></span></td>
-                                    <td class="text-end pe-4 action-buttons">
-                                        <a href="edit_asset.php?id=<?php echo $row['asset_id']; ?>" class="btn btn-light btn-sm border">
-                                            <i class="bi bi-pencil text-dark"></i>
-                                        </a>
-                                        <button class="btn btn-light btn-sm border text-danger" onclick="showDeleteModal(<?php echo $row['asset_id']; ?>)">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                    <td class="text-end pe-4">
+                                        <div class="action-buttons">
+                                            <a href="edit_asset.php?id=<?php echo $row['asset_id']; ?>" class="btn btn-light btn-sm border">
+                                                <i class="bi bi-pencil text-dark"></i>
+                                            </a>
+                                            <button class="btn btn-light btn-sm border text-danger" onclick="showDeleteModal(<?php echo $row['asset_id']; ?>)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
