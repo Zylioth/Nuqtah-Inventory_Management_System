@@ -51,7 +51,8 @@ if ($asset_id && ($auto_generate || !empty($unique_tag))) {
 
         $nextNumber = $current_tag_count + 1;
         do {
-            $generatedTag = sprintf('%s-%s-%03d', $prefix, $asset_id, $nextNumber);
+            // Always prefix generated tags with the organization code 'ITQSHHB'
+            $generatedTag = sprintf('ITQSHHB-%s-%s-%03d', $prefix, $asset_id, $nextNumber);
             $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM asset_tags WHERE unique_tag = ?");
             $checkStmt->execute([$generatedTag]);
             $exists = $checkStmt->fetchColumn() > 0;
