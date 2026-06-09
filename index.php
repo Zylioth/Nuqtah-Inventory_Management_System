@@ -25,17 +25,41 @@ session_start();
 body {
     background-color: #f8fafc;
     font-family: 'Inter', sans-serif;
+    overflow-x: hidden; /* Prevent horizontal layout breaking */
 }
 
-header img {
-    transition: transform 0.3s ease;
+/* --- Hero Section & Video Layer Scaling --- */
+.hero-section {
+    position: relative;
+    overflow: hidden;
+    min-height: 85vh; /* Fluid viewport adaptation */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* Force the container to fit the screen width */
-.hero-section .container {
-    max-width: 100%;
-    padding-left: 15px;
-    padding-right: 15px;
+.hero-video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    z-index: -2;
+    transform: translate(-50%, -50%);
+    object-fit: cover;
+}
+
+/* Fallback gradient to ensure absolute text contrast if video takes time to buffer */
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(0, 77, 64, 0.7) 0%, rgba(0, 0, 0, 0.65) 100%);
+    z-index: -1;
 }
 
 /* --- Strictly Scoped Hover Animations (Index Page Only) --- */
@@ -75,7 +99,7 @@ header img {
     border-width: 2px !important;
     font-weight: 600;
     transition: all 0.3s ease;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(4px);
 }
 
@@ -85,82 +109,111 @@ header img {
     transform: scale(1.03);
 }
 
-/* --- Mobile Specific Fix (iPhone 11 Pro) --- */
+/* --- Fluid Workflow Circles --- */
+.step-circle {
+    width: 60px;
+    height: 60px;
+    background-color: rgba(0, 121, 107, 0.1);
+    color: var(--teal-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem auto;
+    font-size: 1.25rem;
+    font-weight: 700;
+    transition: transform 0.3s ease;
+}
+.step-item:hover .step-circle {
+    transform: scale(1.1);
+    background-color: var(--teal-primary);
+    color: #ffffff;
+}
+
+/* --- Perfect Adaptive Responsiveness Rules --- */
+@media (max-width: 991px) {
+    .hero-section {
+        min-height: 75vh;
+    }
+}
+
 @media (max-width: 768px) {
-    /* Make the logo wrapper wrap items if they don't fit */
-    .d-flex.align-items-center.justify-content-center.mb-4 {
-        flex-wrap: wrap; 
-        flex-direction: row; 
+    /* Fluid adjustment of the logo split structure */
+    .brand-logos-container {
+        flex-direction: column !important;
+        gap: 1.25rem;
+    }
+    
+    .logo-divider {
+        width: 60px !important;
+        height: 2px !important;
+        margin: 0.5rem 0 !important;
     }
 
-    /* Scale down the Nuqtah Logo */
+    /* Scale down the Logos to prevent side clipping on mobile devices */
     .hero-section img[alt="Nuqtah Logo"] {
-        height: 50px !important; 
+        height: 50px !important;
         width: auto;
     }
 
-    /* Scale down the ITQSHHB Logo */
     .hero-section img[alt="ITQSHHB Logo"] {
-        height: 60px !important;
+        height: 70px !important;
         width: auto;
     }
 
-    /* Shrink the divider and margins so they don't push logos off-screen */
-    .hero-section div[style*="width: 2px"] {
-        height: 40px !important;
-        margin: 0 15px !important; 
-    }
-
-    /* Adjust the lead text so it doesn't look too big compared to logos */
     .hero-section .lead {
         font-size: 1.1rem !important;
         line-height: 1.4;
     }
 }
+
+@media (max-width: 480px) {
+    .hero-section {
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+    }
+}
 </style>
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm" style="background-color: var(--brand-teal);">
-    <div class="container">
 
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm" style="background-color: var(--brand-teal);">
+    <div class="container">
         <a class="navbar-brand d-flex align-items-center" href="index.php">
-            <img src="assets/img/logoNuqtah_White.png" alt="ITQSHHB Logo" height="50" class="d-inline-block align-top">
+            <img src="assets/img/logoNuqtah_White.png" alt="Nuqtah Logo" height="42" class="d-inline-block align-top">
         </a>
 
         <div class="ms-auto d-flex align-items-center">
             <?php if (isset($_SESSION['user_id'])): ?>
-                <span class="text-white me-3 small d-none d-sm-inline">Welcome, <strong><?php echo htmlspecialchars($_SESSION['full_name']); ?></strong></span>
+                <span class="text-white me-3 small d-none d-md-inline">Welcome, <strong><?php echo htmlspecialchars($_SESSION['full_name']); ?></strong></span>
                 <a href="actions/logout.php" class="btn btn-outline-light btn-sm rounded-pill px-3">Logout</a>
             <?php else: ?>
                 <a href="login.php" class="btn btn-outline-light me-2 rounded-pill px-3 btn-sm">Login</a>
                 <a href="signup.php" class="btn btn-light text-teal rounded-pill px-3 btn-sm" style="color: var(--teal-primary); font-weight: 600;">Register</a>
             <?php endif; ?>
         </div>
-
     </div>
 </nav>
 
-<!-- Hero section with upgraded overlays and fallbacks -->
-<header class="hero-section text-center text-white d-flex align-items-center justify-content-center" style="position: relative; overflow: hidden; height: 85vh;">
-    
-    <video autoplay muted loop playsinline class="hero-video" style="position: absolute; top: 50%; left: 50%; min-width: 100%; min-height: 100%; width: auto; height: auto; z-index: -2; transform: translate(-50%, -50%); object-fit: cover;">
+<!-- Hero section with upgraded overlays and responsive scaling safeguards -->
+<header class="hero-section text-center text-white">
+    <video autoplay muted loop playsinline class="hero-video">
         <source src="assets/video/Front_slowfront_boomerang.mp4" type="video/mp4">
         Your browser does not support the video tag.
     </video>
 
-    <!-- Upgraded gradient overlay for premium look and high readability -->
-    <div class="hero-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(0, 77, 64, 0.6) 0%, rgba(0, 0, 0, 0.5) 100%); z-index: -1;"></div>
+    <div class="hero-overlay"></div>
 
-    <div class="container px-5" style="animation: fadeUp 1s ease-out forwards;">
+    <div class="container px-4 px-md-5">
         
-        <!-- Both logo ITQSHHB and nuqtah -->
-        <div class="d-flex align-items-center justify-content-center mb-4">
+        <!-- Both logo ITQSHHB and nuqtah with fluid centering flex layouts -->
+        <div class="d-flex align-items-center justify-content-center brand-logos-container mb-4">
             <img src="assets/img/logoNuqtah_White.png" alt="Nuqtah Logo" style="height: 80px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));">   
-            <div style="width: 2px; height: 80px; background: white; margin: 0 30px; opacity: 0.8; box-shadow: 0 0 10px rgba(0,0,0,0.3);"></div>
+            <div class="logo-divider" style="width: 2px; height: 80px; background: white; margin: 0 30px; opacity: 0.8; box-shadow: 0 0 10px rgba(0,0,0,0.3);"></div>
             <img src="assets/img/ITQSHHBLogo.png" alt="ITQSHHB Logo" style="height: 100px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));"> 
         </div>
 
-        <p class="lead mb-4 fw-light" style="text-shadow: 0 2px 8px rgba(0,0,0,0.8); font-size: 1.4rem; letter-spacing: 1px;">
+        <p class="lead mb-4 fw-light text-white" style="text-shadow: 0 2px 8px rgba(0,0,0,0.8); font-size: 1.35rem; letter-spacing: 0.5px;">
             An IT Inventory Management System built for ITQSHHB
         </p>
 
@@ -178,10 +231,57 @@ header img {
     </div>
 </header>
 
-<!-- Restructured feature list with modern, responsive grid metrics -->
-<section class="container my-5">
+<!-- Workflow section using perfectly responsive grid cards -->
+<section class="bg-white py-5 border-top border-bottom">
+    <div class="container my-3 px-4">
+        <div class="text-center mb-5">
+            <span class="badge rounded-pill px-3 py-2 mb-2 text-white" style="font-size: 0.75rem; background-color: var(--teal-primary) !important; letter-spacing: 1px;">WORKFLOW</span>
+            <h2 class="fw-bold text-dark">How Digital Borrowing Works</h2>
+            <p class="text-muted small">A seamless paperless experience from request to return</p>
+        </div>
+        <div class="row g-4 justify-content-center text-center">
+            <div class="col-sm-6 col-lg-3 step-item">
+                <div class="p-3">
+                    <div class="step-circle">1</div>
+                    <h5 class="fw-bold text-dark">Sign In</h5>
+                    <p class="text-muted small mb-0">Register with your institutional credentials to access the central catalog.</p>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3 step-item">
+                <div class="p-3">
+                    <div class="step-circle">2</div>
+                    <h5 class="fw-bold text-dark">Reserve Items</h5>
+                    <p class="text-muted small mb-0">Browse live stock counts, add items to your basket, and specify a pickup time.</p>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3 step-item">
+                <div class="p-3">
+                    <div class="step-circle">3</div>
+                    <h5 class="fw-bold text-dark">Inspection</h5>
+                    <p class="text-muted small mb-0">Present your request ID at the desk, verify the item condition, and collect.</p>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3 step-item">
+                <div class="p-3">
+                    <div class="step-circle">4</div>
+                    <h5 class="fw-bold text-dark">Safe Return</h5>
+                    <p class="text-muted small mb-0">Return the equipment on or before your return date to keep the inventory healthy.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Restructured feature list with modern responsive grid metrics (col-12 col-md-6 col-lg-4) -->
+<section class="container my-5 px-4">
+    <div class="text-center mb-5">
+        <span class="badge rounded-pill px-3 py-2 mb-2 text-white" style="font-size: 0.75rem; background-color: var(--teal-primary) !important; letter-spacing: 1px;">FEATURES</span>
+        <h2 class="fw-bold text-dark">System Capabilities</h2>
+        <p class="text-muted small">Fully loaded with all the modules needed to run campus assets smoothly</p>
+    </div>
+
     <div class="row g-4 text-center">
-        <div class="col-md-4">
+        <div class="col-12 col-md-6 col-lg-4">
             <div class="card landing-card h-100 border-0 shadow-sm p-4 rounded-4">
                 <div class="feature-icon-wrapper">
                     <i class="fas fa-exchange-alt"></i>
@@ -190,7 +290,7 @@ header img {
                 <p class="text-muted small mb-0">Move away from manual paper forms. Submit digital requests in seconds and track your return deadlines automatically.</p>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-12 col-md-6 col-lg-4">
             <div class="card landing-card h-100 border-0 shadow-sm p-4 rounded-4">
                 <div class="feature-icon-wrapper">
                     <i class="fas fa-shopping-basket"></i>
@@ -199,7 +299,7 @@ header img {
                 <p class="text-muted small mb-0">Browse with a modern cart system. Add multiple items and submit in one single action.</p>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-12 col-md-6 col-lg-4">
             <div class="card landing-card h-100 border-0 shadow-sm p-4 rounded-4">
                 <div class="feature-icon-wrapper">
                     <i class="fas fa-map-marker-alt"></i>
@@ -208,7 +308,7 @@ header img {
                 <p class="text-muted small mb-0">Monitor real-time stock levels and the current deployment location of all borrowed IT assets.</p>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-12 col-md-6 col-lg-4">
             <div class="card landing-card h-100 border-0 shadow-sm p-4 rounded-4">
                 <div class="feature-icon-wrapper">
                     <i class="fas fa-tasks"></i>
@@ -217,7 +317,7 @@ header img {
                 <p class="text-muted small mb-0">Easily add, edit, or remove item parameters from the central operational database in seconds.</p>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-12 col-md-6 col-lg-4">
             <div class="card landing-card h-100 border-0 shadow-sm p-4 rounded-4">
                 <div class="feature-icon-wrapper">
                     <i class="fas fa-chart-line"></i>
@@ -226,7 +326,7 @@ header img {
                 <p class="text-muted small mb-0">Track equipment with real-time dynamic statistics, charts, and transaction logs from one centralized screen.</p>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-12 col-md-6 col-lg-4">
             <div class="card landing-card h-100 border-0 shadow-sm p-4 rounded-4">
                 <div class="feature-icon-wrapper">
                     <i class="fas fa-file-invoice"></i>
@@ -238,8 +338,8 @@ header img {
     </div>
 </section>
 
-</body>
-
+<!-- Footer file is included correctly inside body to maintain perfect layout structure -->
 <?php include 'includes/footer.php'; ?>
 
+</body>
 </html>
