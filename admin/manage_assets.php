@@ -527,37 +527,40 @@ function deleteTag(tagId, assetId) {
     });
 }
 
-// Mark as Available AJAX
-function markAsAvailable(tagId, assetId, uniqueTag) {
-    Swal.fire({
-        title: 'Mark as Available?',
-        text: `Confirm that ${uniqueTag} is repaired and ready for use?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#00796B',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Yes, it is ready!'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch('actions/update_tag_status.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'tag_id=' + tagId + '&asset_id=' + assetId + '&unique_tag=' + encodeURIComponent(uniqueTag)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({ icon: 'success', title: 'Status Updated', text: `${uniqueTag} is now available.`, timer: 2000, showConfirmButton: false });
-                    loadTags(assetId);
-                } else {
-                    Swal.fire('Error', data.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire('Error', 'Could not reach the server.', 'error');
+// Update Tag Status AJAX (Upgrade C)
+function updateTagStatus(tagId, assetId, status, uniqueTag) {
+    const formData = new FormData();
+    formData.append('tag_id', tagId);
+    formData.append('asset_id', assetId);
+    formData.append('status', status);
+    formData.append('unique_tag', uniqueTag);
+
+    fetch('actions/update_tag_status.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({ 
+                toast: true, 
+                position: 'top-end', 
+                icon: 'success', 
+                title: `${uniqueTag} updated to ${status}`, 
+                showConfirmButton: false, 
+                timer: 2000,
+                timerProgressBar: true
             });
+            loadTags(assetId); // Dynamically reload the tags inside the modal
+        } else {
+            Swal.fire('Error', data.message, 'error');
+            loadTags(assetId); // Reload tags to revert selected dropdown state on error
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Error', 'Could not reach the server.', 'error');
+        loadTags(assetId);
     });
 }
 </script>
