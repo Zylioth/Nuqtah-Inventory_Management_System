@@ -1,1 +1,4 @@
 .env
+
+# Impeccable design tooling: local run state + regenerable screenshots
+.impeccable/
