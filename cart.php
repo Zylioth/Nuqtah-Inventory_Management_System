@@ -136,6 +136,7 @@ foreach ($cart_items as $item) {
 <body class="bg-light">
 
 <?php include 'includes/header.php'; ?>
+<?php include 'includes/users_sidebar.php'; ?>
 
 <div class="container py-5">
     <div class="row justify-content-center">

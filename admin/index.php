@@ -17,13 +17,23 @@ $overdue_count = $pdo->query("SELECT COUNT(*) FROM borrowing_requests WHERE stat
 $healthy_stock_count = $total_assets - ($low_stock_count + $out_of_stock_count);
 
 // 2. Data for Category Bar Chart
-$cat_query = $pdo->query("SELECT category, COUNT(*) as count FROM assets GROUP BY category");
+$cat_query = $pdo->query("SELECT category, COUNT(*) as count FROM assets GROUP BY category ORDER BY count DESC, category ASC");
 $categories = [];
 $counts = [];
 while($row = $cat_query->fetch()) {
     $categories[] = $row['category'];
-    $counts[] = $row['count'];
+    $counts[] = (int) $row['count'];
 }
+$category_count = count($categories);
+$max_category_count = $counts ? max($counts) : 0;
+
+// Items that need restocking
+$watchlist = $pdo->query("SELECT asset_id, asset_name, category, current_stock 
+                          FROM assets 
+                          WHERE current_stock <= 5 
+                          ORDER BY current_stock ASC, asset_name ASC 
+                          LIMIT 5")->fetchAll();
+$watchlist_total = $low_stock_count + $out_of_stock_count;
 
 // Fetch Pending OR Overdue requests (Limited to 5)
 $query = "SELECT b.request_id, b.request_date, b.return_date, b.quantity, b.status, u.full_name, a.asset_name 
@@ -35,7 +45,8 @@ $query = "SELECT b.request_id, b.request_date, b.return_date, b.quantity, b.stat
           ORDER BY (CASE WHEN b.status = 'On Loan' THEN 1 ELSE 2 END), b.request_date DESC 
           LIMIT 5";
 $pending_list = $pdo->query($query)->fetchAll();
-
+$attention_total = $pending_requests + $overdue_count;
+$today_label = date('l, j F Y');
 ?>
 
 <!DOCTYPE html>
@@ -45,344 +56,680 @@ $pending_list = $pdo->query($query)->fetchAll();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nuqtah Admin - Dashboard</title>
     <link rel="icon" type="image/png" href="/Nuqtah_IT/assets/img/Nuqtah_logo_small.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
 <style>
-    :root { 
-        --sidebar-width: 260px; 
-        --teal-primary: #00796B; 
-        --teal-dark: #004D40;
-        --teal-light: rgba(0, 121, 107, 0.08);
+    :root {
+        --sidebar-width: 260px;
+        --nq-teal: #00796B;
+        --nq-deep: #004D40;
+        --nq-paper: #F5F8F7;
+        --nq-ink: #0B2B26;
+        --nq-body: rgba(0, 77, 64, 0.78);
+        --nq-line: rgba(0, 77, 64, 0.12);
+        --nq-tint: rgba(0, 121, 107, 0.08);
+        --nq-ok: #146C43;
+        --nq-low: #9A5B00;
+        --nq-out: #B3261E;
+        --nq-font: 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
     }
-    
-    body { background-color: #f8f9fa; overflow-x: hidden; font-family: 'Inter', sans-serif; }
 
-    /* Space layout metrics */
-    .main-content { transition: all 0.3s ease; padding: 20px; }
+    body {
+        background-color: var(--nq-paper);
+        color: var(--nq-ink);
+        font-family: var(--nq-font);
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+    }
 
-    /* Desktop View adjustments */
+    /* ---------- Shell ---------- */
+    .adm-main {
+        padding: 1.25rem 1rem 3rem;
+        transition: margin-left 0.3s ease;
+    }
     @media (min-width: 992px) {
-        .main-content { margin-left: var(--sidebar-width); padding: 40px; }
+        .adm-main { margin-left: var(--sidebar-width); padding: 2rem 2.25rem 3.5rem; }
     }
 
-    /* Mobile view adjustments */
-    @media (max-width: 991.98px) {
-        .main-content { margin-left: 0; }
-    }
+    .adm-wrap { max-width: 1180px; margin: 0 auto; }
 
-    /* Modern stat cards */
-    .card-stats { 
-        border: none; 
-        border-radius: 16px; 
-        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.05); 
-        transition: transform 0.22s ease, box-shadow 0.22s ease; 
-        background: #ffffff;
+    /* ---------- Header ---------- */
+    .adm-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
     }
-    .card-stats:hover { 
-        transform: translateY(-4px); 
-        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.08); 
+    .adm-head-copy { display: flex; align-items: flex-start; gap: 0.75rem; min-width: 0; }
+    .adm-menu-btn {
+        flex: 0 0 auto;
+        display: grid;
+        place-items: center;
+        width: 2.6rem;
+        height: 2.6rem;
+        margin-top: 0.1rem;
+        border: 1px solid var(--nq-line);
+        border-radius: 11px;
+        background: #fff;
+        color: var(--nq-deep);
+        font-size: 1.3rem;
+        box-shadow: 0 8px 18px -14px rgba(0, 77, 64, 0.7);
     }
-    .chart-container { position: relative; height: 300px; width: 100%; }
-    .text-teal { color: var(--teal-primary) !important; }
+    .adm-menu-btn:hover { background: var(--nq-tint); color: var(--nq-teal); }
 
-    /* Translucent custom button styles */
-    .btn-teal-light {
-        background-color: var(--teal-light);
-        color: var(--teal-primary);
+    .adm-eyebrow {
+        margin: 0;
+        font-size: 0.72rem;
         font-weight: 600;
-        border: none;
-        transition: all 0.2s;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--nq-teal);
     }
-    .btn-teal-light:hover {
-        background-color: var(--teal-primary);
-        color: #ffffff;
+    .adm-title {
+        margin: 0.3rem 0 0.25rem;
+        font-size: clamp(1.7rem, 3.2vw, 2.2rem);
+        font-weight: 600;
+        letter-spacing: -0.025em;
+        line-height: 1.1;
+        color: var(--nq-deep);
+    }
+    .adm-sub { margin: 0; font-size: 0.88rem; color: var(--nq-body); }
+
+    .adm-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .adm-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        padding: 0.55rem 0.9rem;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        line-height: 1.2;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+    .adm-btn i { font-size: 0.95rem; }
+    .adm-btn--ghost { border-color: var(--nq-line); background: #fff; color: var(--nq-deep); }
+    .adm-btn--ghost:hover { border-color: rgba(0, 121, 107, 0.4); background: var(--nq-tint); color: var(--nq-teal); }
+    .adm-btn--primary { background: var(--nq-teal); color: #fff; }
+    .adm-btn--primary:hover { background: var(--nq-deep); color: #fff; transform: translateY(-1px); }
+
+    /* ---------- KPI tiles ---------- */
+    .adm-kpis {
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: minmax(0, 1fr);
+        margin-bottom: 1.25rem;
+    }
+    .adm-kpi {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        padding: 1rem 1.05rem;
+        border: 1px solid var(--nq-line);
+        border-radius: 16px;
+        background: #fff;
+        text-decoration: none;
+        color: inherit;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+    .adm-kpi:hover { border-color: rgba(0, 121, 107, 0.32); color: inherit; transform: translateY(-2px); box-shadow: 0 18px 32px -28px rgba(0, 77, 64, 0.8); }
+    .adm-kpi-top { display: flex; align-items: center; gap: 0.5rem; }
+    .adm-kpi-icon {
+        display: grid;
+        place-items: center;
+        width: 1.9rem;
+        height: 1.9rem;
+        border-radius: 9px;
+        background: var(--nq-tint);
+        color: var(--nq-teal);
+        font-size: 0.95rem;
+    }
+    .adm-kpi-label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--nq-body);
+    }
+    .adm-kpi-value {
+        font-size: 2rem;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        color: var(--nq-deep);
+        font-variant-numeric: tabular-nums;
+    }
+    .adm-kpi-foot { font-size: 0.78rem; color: var(--nq-body); }
+    .adm-kpi.is-warn .adm-kpi-icon { background: #FFF4D6; color: #7A4E00; }
+    .adm-kpi.is-warn .adm-kpi-value { color: #7A4E00; }
+    .adm-kpi.is-danger .adm-kpi-icon { background: #FDECEA; color: var(--nq-out); }
+    .adm-kpi.is-danger .adm-kpi-value { color: var(--nq-out); }
+    .adm-kpi.is-danger .adm-kpi-label { color: #8A3B34; }
+
+    /* ---------- Panels ---------- */
+    .adm-grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: start;
+    }
+    .adm-panel {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        padding: 1.1rem 1.15rem;
+        border: 1px solid var(--nq-line);
+        border-radius: 18px;
+        background: #fff;
+    }
+    .adm-panel-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.9rem;
+    }
+    .adm-panel-title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--nq-deep);
+    }
+    .adm-panel-sub { margin: 0.15rem 0 0; font-size: 0.78rem; color: var(--nq-body); }
+    .adm-panel-link {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--nq-teal);
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    .adm-panel-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+    .adm-count {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.75rem;
+        height: 1.75rem;
+        padding: 0 0.45rem;
+        border-radius: 999px;
+        background: var(--nq-tint);
+        color: var(--nq-teal);
+        font-size: 0.78rem;
+        font-weight: 700;
     }
 
-    /* Conditional alerting pulses */
-    .card-pulse {
-        animation: card-alert-pulse 2s infinite;
+    /* ---------- Attention list ---------- */
+    .adm-tasks { display: grid; gap: 0.5rem; }
+    .adm-task {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 0.7rem;
+        padding: 0.65rem 0.7rem;
+        border: 1px solid var(--nq-line);
+        border-radius: 12px;
+        background: #fff;
+        text-decoration: none;
+        color: inherit;
+        transition: border-color 0.2s ease, background-color 0.2s ease;
+    }
+    .adm-task:hover { border-color: rgba(0, 121, 107, 0.32); background: #FAFDFC; color: inherit; }
+    .adm-task-icon {
+        display: grid;
+        place-items: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        font-size: 0.85rem;
+    }
+    .adm-task-icon.is-danger { background: #FDECEA; color: var(--nq-out); }
+    .adm-task-icon.is-warn { background: #FFF4D6; color: #7A4E00; }
+    .adm-task-main { min-width: 0; }
+    .adm-task-main strong { display: block; font-size: 0.88rem; font-weight: 600; color: var(--nq-deep); line-height: 1.3; }
+    .adm-task-sub {
+        display: block;
+        margin-top: 0.1rem;
+        font-size: 0.76rem;
+        color: var(--nq-body);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .adm-task-side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; text-align: right; }
+    .adm-task-date { font-size: 0.72rem; color: var(--nq-body); white-space: nowrap; }
+    .adm-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.22rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .adm-badge.is-danger { background: #FDECEA; color: var(--nq-out); }
+    .adm-badge.is-warn { background: #FFF4D6; color: #7A4E00; }
+
+    /* ---------- Donut / stock health ---------- */
+    .adm-health { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.5rem; margin: auto 0; }
+    .adm-donut { position: relative; width: 170px; height: 170px; flex: 0 0 auto; }
+    .adm-donut-center {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        text-align: center;
+        pointer-events: none;
+    }
+    .adm-donut-center b { display: block; font-size: 1.55rem; font-weight: 600; line-height: 1; color: var(--nq-deep); }
+    .adm-donut-center span { display: block; margin-top: 0.15rem; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--nq-body); }
+    .adm-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; min-width: 150px; flex: 1 1 auto; }
+    .adm-legend li { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--nq-body); }
+    .adm-legend b { margin-left: auto; color: var(--nq-deep); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .adm-dot { width: 0.55rem; height: 0.55rem; border-radius: 50%; flex: 0 0 auto; }
+
+    /* ---------- Category bars ---------- */
+    .adm-cats { display: grid; gap: 0.7rem; }
+    .adm-cat-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.3rem; }
+    .adm-cat-name { font-size: 0.85rem; font-weight: 500; color: var(--nq-deep); }
+    .adm-cat-name span { color: var(--nq-body); font-weight: 400; font-size: 0.78rem; }
+    .adm-cat-count { font-size: 0.82rem; font-weight: 600; color: var(--nq-deep); font-variant-numeric: tabular-nums; }
+    .adm-cat-bar { height: 6px; border-radius: 999px; background: rgba(0, 77, 64, 0.08); overflow: hidden; }
+    .adm-cat-bar span { display: block; height: 100%; border-radius: inherit; background: var(--nq-teal); }
+    .adm-cat:first-child .adm-cat-bar span { background: var(--nq-deep); }
+
+    /* ---------- Watchlist ---------- */
+    .adm-watch { display: grid; gap: 0.15rem; }
+    .adm-watch-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.55rem 0.5rem;
+        border-radius: 10px;
+        text-decoration: none;
+        color: inherit;
+    }
+    .adm-watch-row:hover { background: #F7FAF9; color: inherit; }
+    .adm-watch-name { min-width: 0; font-size: 0.85rem; font-weight: 500; color: var(--nq-deep); }
+    .adm-watch-name span {
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 400;
+        color: var(--nq-body);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .adm-watch-qty {
+        flex: 0 0 auto;
+        padding: 0.22rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        background: #FFF4D6;
+        color: #7A4E00;
+        white-space: nowrap;
+    }
+    .adm-watch-qty.is-out { background: #FDECEA; color: var(--nq-out); }
+
+    /* ---------- Empty states ---------- */
+    .adm-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.2rem;
+        padding: 1.75rem 1rem;
+        text-align: center;
+    }
+    .adm-empty-icon {
+        display: grid;
+        place-items: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        margin-bottom: 0.4rem;
+        border-radius: 50%;
+        background: var(--nq-tint);
+        color: var(--nq-teal);
+        font-size: 1.1rem;
+    }
+    .adm-empty strong { font-size: 0.9rem; font-weight: 600; color: var(--nq-deep); }
+    .adm-empty span { font-size: 0.8rem; color: var(--nq-body); }
+
+    /* ---------- Focus ---------- */
+    .adm-main a:focus-visible,
+    .adm-main button:focus-visible {
+        outline: 2px solid var(--nq-teal);
+        outline-offset: 3px;
     }
 
-    @keyframes card-alert-pulse {
-        0% { box-shadow: 0 0.125rem 0.25rem rgba(220, 53, 69, 0.15); }
-        50% { box-shadow: 0 0 16px rgba(220, 53, 69, 0.35); }
-        100% { box-shadow: 0 0.125rem 0.25rem rgba(220, 53, 69, 0.15); }
+    /* ---------- Responsive ---------- */
+    @media (min-width: 560px) {
+        .adm-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
-
-    /* Table styling */
-    .table-hover tbody tr:hover {
-        background-color: #f4faf9;
-        transition: background-color 0.2s ease;
+    @media (min-width: 1200px) {
+        .adm-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.85rem; }
+        .adm-grid { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+    }
+    @media (max-width: 575.98px) {
+        .adm-btn { font-size: 0.8rem; padding: 0.5rem 0.7rem; }
+        .adm-task { grid-template-columns: auto minmax(0, 1fr); }
+        .adm-task-side { grid-column: 2; flex-direction: row; align-items: center; justify-content: space-between; width: 100%; }
+        .adm-task-sub { white-space: normal; }
+    }
+    @media (max-width: 559.98px) {
+        .adm-kpi { flex-direction: row; align-items: center; gap: 0.75rem; padding: 0.7rem 0.85rem; }
+        .adm-kpi-top { flex: 1 1 auto; min-width: 0; }
+        .adm-kpi-value { font-size: 1.5rem; }
+        .adm-kpi-foot { display: none; }
+        .adm-health { flex-direction: column; align-items: stretch; gap: 1.25rem; }
+        .adm-donut { align-self: center; }
+    }
+    @media (max-width: 349.98px) {
+        .adm-btn span { display: none; }
+        .adm-btn { width: 2.6rem; height: 2.6rem; padding: 0; }
+    }
+    @media (hover: hover) {
+        .adm-panel { transition: box-shadow 0.2s ease; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .adm-main, .adm-kpi, .adm-btn { transition: none !important; }
+        .adm-kpi:hover, .adm-btn--primary:hover { transform: none; }
     }
 </style>
-
 </head>
 <body>
 
 <?php include 'includes/sidebar.php'; ?>
 
-<div class="main-content">
-    <div class="mobile-toggle d-lg-none mb-3">
-        <button class="btn btn-white shadow-sm border text-teal" id="menuToggle">
-            <i class="bi bi-list fs-3"></i>
-        </button>
-    </div>
+<main class="adm-main">
+    <div class="adm-wrap">
 
-    <header class="mb-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-        <div>
-            <h2 class="fw-bold text-dark mb-1">Dashboard Overview</h2>
-            <p class="text-muted small mb-0">Real-time status of Nuqtah Inventory at ITQSHHB.</p>
+        <header class="adm-head">
+            <div class="adm-head-copy">
+                <button type="button" id="menuToggle" class="adm-menu-btn d-lg-none" aria-label="Open navigation" aria-controls="adminSidebar" aria-expanded="false">
+                    <i class="bi bi-list" aria-hidden="true"></i>
+                </button>
+                <div>
+                    <p class="adm-eyebrow">ITQSHHB &middot; ICT Department</p>
+                    <h1 class="adm-title">Dashboard</h1>
+                    <p class="adm-sub"><?php echo $today_label; ?> &middot; live inventory status</p>
+                </div>
+            </div>
+            <div class="adm-actions">
+                <a href="report.php" class="adm-btn adm-btn--ghost" aria-label="Open reports">
+                    <i class="bi bi-file-earmark-bar-graph" aria-hidden="true"></i><span>Report</span>
+                </a>
+                <a href="add_assets.php" class="adm-btn adm-btn--ghost" aria-label="Add a new asset">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i><span>Add asset</span>
+                </a>
+                <button type="button" class="adm-btn adm-btn--primary" onclick="window.location.reload()" aria-label="Refresh dashboard data">
+                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i><span>Refresh</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- KPI tiles -->
+        <div class="adm-kpis">
+            <a class="adm-kpi" href="manage_assets.php">
+                <span class="adm-kpi-top">
+                    <span class="adm-kpi-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                    <span class="adm-kpi-label">Total assets</span>
+                </span>
+                <span class="adm-kpi-value"><?php echo (int) $total_assets; ?></span>
+                <span class="adm-kpi-foot">Across <?php echo $category_count; ?> <?php echo $category_count === 1 ? 'category' : 'categories'; ?></span>
+            </a>
+
+            <a class="adm-kpi <?php echo ($pending_requests > 0) ? 'is-warn' : ''; ?>" href="view_requests.php">
+                <span class="adm-kpi-top">
+                    <span class="adm-kpi-icon"><i class="bi bi-hourglass-split" aria-hidden="true"></i></span>
+                    <span class="adm-kpi-label">Pending requests</span>
+                </span>
+                <span class="adm-kpi-value"><?php echo (int) $pending_requests; ?></span>
+                <span class="adm-kpi-foot"><?php echo ($pending_requests > 0) ? 'Waiting for your approval' : 'Nothing waiting'; ?></span>
+            </a>
+
+            <a class="adm-kpi <?php echo ($overdue_count > 0) ? 'is-danger' : ''; ?>" href="view_requests.php">
+                <span class="adm-kpi-top">
+                    <span class="adm-kpi-icon"><i class="bi bi-calendar-x" aria-hidden="true"></i></span>
+                    <span class="adm-kpi-label">Overdue loans</span>
+                </span>
+                <span class="adm-kpi-value"><?php echo (int) $overdue_count; ?></span>
+                <span class="adm-kpi-foot"><?php echo ($overdue_count > 0) ? 'Past the return date' : 'None overdue'; ?></span>
+            </a>
+
+            <a class="adm-kpi <?php echo ($out_of_stock_count > 0) ? 'is-danger' : ''; ?>" href="manage_assets.php">
+                <span class="adm-kpi-top">
+                    <span class="adm-kpi-icon"><i class="bi bi-x-circle" aria-hidden="true"></i></span>
+                    <span class="adm-kpi-label">Out of stock</span>
+                </span>
+                <span class="adm-kpi-value"><?php echo (int) $out_of_stock_count; ?></span>
+                <span class="adm-kpi-foot"><?php echo (int) $low_stock_count; ?> low on stock</span>
+            </a>
         </div>
-        <button onclick="window.location.reload()" class="btn btn-white shadow-sm rounded-pill px-4 py-2 mt-2 mt-md-0 border text-dark fw-semibold" style="font-size: 0.9rem;">
-            <i class="bi bi-arrow-clockwise me-1 text-teal"></i> Refresh Data
-        </button>
-    </header>
 
-    <!-- Cards Grid -->
-    <div class="row g-3 mb-4">
-        <!-- Card: Total Assets -->
-        <div class="col-sm-6 col-xl-3">
-            <div class="card card-stats p-3 border-start border-4 border-success">
-                <div class="d-flex align-items-center">
-                    <div class="p-3 bg-success bg-opacity-10 text-success rounded-3 me-3">
-                        <i class="bi bi-box-seam fs-4"></i>
-                    </div>
+        <div class="adm-grid">
+
+            <!-- Needs attention -->
+            <section class="adm-panel" aria-labelledby="attentionTitle">
+                <div class="adm-panel-head">
                     <div>
-                        <p class="text-muted mb-0 small fw-semibold">Total Assets</p>
-                        <h4 class="fw-bold text-dark mb-0"><?php echo $total_assets; ?></h4>
+                        <h2 class="adm-panel-title" id="attentionTitle">Needs attention</h2>
+                        <p class="adm-panel-sub">Pending approvals and loans past their return date.</p>
                     </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Card: Pending Approvals -->
-        <div class="col-sm-6 col-xl-3">
-            <div class="card card-stats p-3 border-start border-4 border-primary">
-                <div class="d-flex align-items-center">
-                    <div class="p-3 bg-primary bg-opacity-10 text-primary rounded-3 me-3">
-                        <i class="bi bi-clock-history fs-4"></i>
-                    </div>
-                    <div>
-                        <p class="text-muted mb-0 small fw-semibold">Pending Requests</p>
-                        <h4 class="fw-bold text-dark mb-0"><?php echo $pending_requests; ?></h4>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Card: Overdue Returns -->
-        <div class="col-sm-6 col-xl-3">
-            <!-- Pulses only if overdue items exist -->
-            <div class="card card-stats p-3 border-start border-4 border-danger <?php echo ($overdue_count > 0) ? 'card-pulse' : ''; ?>">
-                <div class="d-flex align-items-center">
-                    <div class="p-3 bg-danger bg-opacity-10 text-danger rounded-3 me-3">
-                        <i class="bi bi-calendar-x fs-4"></i>
-                    </div>
-                    <div>
-                        <p class="text-muted mb-0 small fw-semibold">Overdue Loans</p>
-                        <h4 class="fw-bold mb-0 <?php echo ($overdue_count > 0) ? 'text-danger' : 'text-dark'; ?>">
-                            <?php echo $overdue_count; ?>
-                        </h4>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Card: Out of Stock -->
-        <div class="col-sm-6 col-xl-3">
-            <!-- Pulses only if critical outages exist -->
-            <div class="card card-stats p-3 border-start border-4 border-danger <?php echo ($out_of_stock_count > 0) ? 'card-pulse' : ''; ?>">
-                <div class="d-flex align-items-center">
-                    <div class="p-3 bg-danger bg-opacity-10 text-danger rounded-3 me-3">
-                        <i class="bi bi-x-circle fs-4"></i>
-                    </div>
-                    <div>
-                        <p class="text-muted mb-0 small fw-semibold">Out of Stock</p>
-                        <h4 class="fw-bold mb-0 <?php echo ($out_of_stock_count > 0) ? 'text-danger' : 'text-dark'; ?>"><?php echo $out_of_stock_count; ?></h4>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Charts Grid -->
-    <div class="row mb-4 g-4">
-        <div class="col-xl-7">
-            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white">
-                <h5 class="fw-bold text-dark mb-4">Assets by Category</h5>
-                <div class="chart-container">
-                    <canvas id="categoryChart"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-5">
-            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white">
-                <h5 class="fw-bold text-dark mb-4">Stock Health Distribution</h5>
-                <div class="chart-container">
-                    <canvas id="stockPieChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Action Required Desk -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
-                <div class="card-header bg-white border-0 py-4 px-4 d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="fw-bold text-dark mb-1">Action Required</h5>
-                        <p class="text-muted mb-0 small">Outstanding administrative approvals and late returns requiring attention.</p>
-                    </div>
-                    <a href="view_requests.php" class="btn btn-sm btn-light rounded-pill px-4 py-2 border fw-semibold">View All Tasks</a>
-                </div>
-                
-                <div class="table-responsive px-4 pb-4">
-                    <?php if (count($pending_list) > 0): ?>
-                        <table class="table align-middle table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="ps-3">Recipient Name</th>
-                                    <th>Asset Description</th>
-                                    <th class="d-none d-md-table-cell">Request Date</th>
-                                    <th>Quantity</th>
-                                    <th>Current Status</th>
-                                    <th class="text-end pe-3">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($pending_list as $request): 
-                                    $isOverdue = ($request['status'] == 'On Loan' && date('Y-m-d') > $request['return_date']);
-                                    
-                                    if ($isOverdue) {
-                                        $status_badge = '<span class="badge bg-danger-subtle text-danger border border-danger border-opacity-25 rounded-pill px-3 py-1.5">Overdue</span>';
-                                    } else {
-                                        $status_badge = '<span class="badge bg-warning-subtle text-warning border border-warning border-opacity-25 rounded-pill px-3 py-1.5">Pending Approval</span>';
-                                    }
-                                ?>
-                                <tr>
-                                    <td class="fw-bold text-dark ps-3">
-                                        <?php echo htmlspecialchars($request['full_name']); ?>
-                                    </td>
-                                    <td class="text-secondary fw-semibold"><?php echo htmlspecialchars($request['asset_name']); ?></td>
-                                    <td class="text-muted small d-none d-md-table-cell">
-                                        <?php echo date('d M Y', strtotime($request['request_date'])); ?>
-                                    </td>
-                                    <td>
-                                        <span class="badge <?php echo $isOverdue ? 'bg-danger-subtle text-danger border-danger' : 'bg-light text-dark'; ?> border px-2.5 py-1.5">
-                                            <?php echo $request['quantity']; ?> Unit(s)
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <?php echo $status_badge; ?>
-                                    </td>
-                                    <td class="text-end pe-3">
-                                        <a href="view_requests.php" class="btn btn-sm btn-teal-light rounded-pill px-3 py-1.5">Manage</a>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php else: ?>
-                        <!-- Friendly Empty State design -->
-                        <div class="text-center py-5">
-                            <div class="bg-teal-light p-4 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
-                                <i class="bi bi-check-lg text-teal fs-2"></i>
-                            </div>
-                            <h6 class="fw-bold text-dark mb-1">All Caught Up!</h6>
-                            <p class="text-muted small mb-0">No pending approvals or overdue loans require your attention.</p>
-                        </div>
+                    <?php if ($attention_total > 0): ?>
+                        <span class="adm-count" aria-label="<?php echo (int) $attention_total; ?> items need attention"><?php echo (int) $attention_total; ?></span>
                     <?php endif; ?>
                 </div>
-            </div>
+
+                <?php if (count($pending_list) > 0): ?>
+                    <div class="adm-tasks">
+                        <?php foreach ($pending_list as $request): ?>
+                            <?php
+                                $isOverdue = ($request['status'] == 'On Loan' && date('Y-m-d') > $request['return_date']);
+                                $daysLate = 0;
+                                if ($isOverdue) {
+                                    $daysLate = max(1, (int) floor((strtotime(date('Y-m-d')) - strtotime($request['return_date'])) / 86400));
+                                }
+                            ?>
+                            <a class="adm-task" href="view_requests.php">
+                                <span class="adm-task-icon <?php echo $isOverdue ? 'is-danger' : 'is-warn'; ?>">
+                                    <i class="bi <?php echo $isOverdue ? 'bi-exclamation-triangle-fill' : 'bi-hourglass'; ?>" aria-hidden="true"></i>
+                                </span>
+                                <span class="adm-task-main">
+                                    <strong><?php echo htmlspecialchars($request['full_name']); ?></strong>
+                                    <span class="adm-task-sub">
+                                        <?php echo htmlspecialchars($request['asset_name']); ?> &middot; <?php echo (int) $request['quantity']; ?> unit<?php echo ((int) $request['quantity'] === 1) ? '' : 's'; ?>
+                                    </span>
+                                </span>
+                                <span class="adm-task-side">
+                                    <?php if ($isOverdue): ?>
+                                        <span class="adm-badge is-danger">Overdue <?php echo $daysLate; ?>d</span>
+                                        <span class="adm-task-date">Due <?php echo date('d M', strtotime($request['return_date'])); ?></span>
+                                    <?php else: ?>
+                                        <span class="adm-badge is-warn">Pending</span>
+                                        <span class="adm-task-date">Asked <?php echo date('d M', strtotime($request['request_date'])); ?></span>
+                                    <?php endif; ?>
+                                </span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between mt-3">
+                        <span class="adm-panel-sub">Showing <?php echo count($pending_list); ?> of <?php echo (int) $attention_total; ?></span>
+                        <a href="view_requests.php" class="adm-panel-link">All requests <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                    </div>
+                <?php else: ?>
+                    <div class="adm-empty">
+                        <span class="adm-empty-icon"><i class="bi bi-check-lg" aria-hidden="true"></i></span>
+                        <strong>All caught up</strong>
+                        <span>No approvals or late returns waiting.</span>
+                    </div>
+                <?php endif; ?>
+            </section>
+
+            <!-- Stock health -->
+            <section class="adm-panel" aria-labelledby="healthTitle">
+                <div class="adm-panel-head">
+                    <div>
+                        <h2 class="adm-panel-title" id="healthTitle">Stock health</h2>
+                        <p class="adm-panel-sub">How the catalogue is holding up.</p>
+                    </div>
+                    <a href="manage_assets.php" class="adm-panel-link">Manage</a>
+                </div>
+
+                <?php if ((int) $total_assets > 0): ?>
+                    <div class="adm-health">
+                        <div class="adm-donut">
+                            <canvas id="stockChart" aria-label="Stock health distribution" role="img"></canvas>
+                            <div class="adm-donut-center">
+                                <b><?php echo (int) $total_assets; ?></b>
+                                <span>assets</span>
+                            </div>
+                        </div>
+                        <ul class="adm-legend">
+                            <li><span class="adm-dot" style="background:#00796B"></span>Healthy <b><?php echo (int) $healthy_stock_count; ?></b></li>
+                            <li><span class="adm-dot" style="background:#E08A00"></span>Low stock <b><?php echo (int) $low_stock_count; ?></b></li>
+                            <li><span class="adm-dot" style="background:#D93025"></span>Out of stock <b><?php echo (int) $out_of_stock_count; ?></b></li>
+                        </ul>
+                    </div>
+                <?php else: ?>
+                    <div class="adm-empty">
+                        <span class="adm-empty-icon"><i class="bi bi-box" aria-hidden="true"></i></span>
+                        <strong>No assets yet</strong>
+                        <span>Add your first asset to see stock health.</span>
+                    </div>
+                <?php endif; ?>
+            </section>
+
+            <!-- Categories -->
+            <section class="adm-panel" aria-labelledby="categoryTitle">
+                <div class="adm-panel-head">
+                    <div>
+                        <h2 class="adm-panel-title" id="categoryTitle">Inventory by category</h2>
+                        <p class="adm-panel-sub"><?php echo (int) $total_assets; ?> assets in total.</p>
+                    </div>
+                    <a href="manage_assets.php" class="adm-panel-link">Manage</a>
+                </div>
+
+                <?php if ($category_count > 0): ?>
+                    <div class="adm-cats">
+                        <?php foreach ($categories as $index => $category_name): ?>
+                            <?php
+                                $value = (int) $counts[$index];
+                                $width = $max_category_count > 0 ? max(3, round(($value / $max_category_count) * 100)) : 0;
+                            ?>
+                            <div class="adm-cat">
+                                <div class="adm-cat-top">
+                                    <span class="adm-cat-name"><?php echo htmlspecialchars($category_name); ?></span>
+                                    <span class="adm-cat-count"><?php echo $value; ?></span>
+                                </div>
+                                <div class="adm-cat-bar" role="presentation"><span style="width: <?php echo $width; ?>%"></span></div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="adm-empty">
+                        <span class="adm-empty-icon"><i class="bi bi-grid" aria-hidden="true"></i></span>
+                        <strong>Nothing catalogued</strong>
+                        <span>Categories appear once assets are added.</span>
+                    </div>
+                <?php endif; ?>
+            </section>
+
+            <!-- Watchlist -->
+            <section class="adm-panel" aria-labelledby="watchTitle">
+                <div class="adm-panel-head">
+                    <div>
+                        <h2 class="adm-panel-title" id="watchTitle">Restock watchlist</h2>
+                        <p class="adm-panel-sub">Items at five units or fewer.</p>
+                    </div>
+                    <?php if ($watchlist_total > 0): ?>
+                        <a href="manage_assets.php" class="adm-panel-link">All <?php echo (int) $watchlist_total; ?> <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                    <?php endif; ?>
+                </div>
+
+                <?php if (count($watchlist) > 0): ?>
+                    <div class="adm-watch">
+                        <?php foreach ($watchlist as $item): ?>
+                            <a class="adm-watch-row" href="manage_assets.php">
+                                <span class="adm-watch-name">
+                                    <?php echo htmlspecialchars($item['asset_name']); ?>
+                                    <span><?php echo htmlspecialchars($item['category']); ?></span>
+                                </span>
+                                <span class="adm-watch-qty <?php echo ((int) $item['current_stock'] === 0) ? 'is-out' : ''; ?>">
+                                    <?php echo (int) $item['current_stock'] === 0 ? 'Out' : ((int) $item['current_stock'] . ' left'); ?>
+                                </span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="adm-empty">
+                        <span class="adm-empty-icon"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
+                        <strong>Stock looks healthy</strong>
+                        <span>No item is running low right now.</span>
+                    </div>
+                <?php endif; ?>
+            </section>
+
         </div>
     </div>
-</div>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Handles side menu toggles cleanly on mobile layouts
-    document.addEventListener('DOMContentLoaded', function() {
-        const menuToggle = document.getElementById('menuToggle');
-        if (menuToggle) {
-            menuToggle.addEventListener('click', function() {
-                const sidebar = document.querySelector('.sidebar');
-                if (sidebar) {
-                    sidebar.classList.toggle('show');
-                }
-            });
-        }
-    });
+    (function () {
+        var canvas = document.getElementById('stockChart');
+        if (!canvas || typeof Chart === 'undefined') return;
 
-    // Charts Configuration
-    const catCtx = document.getElementById('categoryChart').getContext('2d');
-    new Chart(catCtx, {
-        type: 'bar',
-        data: {
-            labels: <?php echo json_encode($categories); ?>,
-            datasets: [{
-                label: 'Items Count',
-                data: <?php echo json_encode($counts); ?>,
-                backgroundColor: 'rgba(0, 121, 107, 0.85)',
-                hoverBackgroundColor: '#004D40',
-                borderRadius: 8,
-                borderSkipped: false
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { 
-                legend: { display: false } 
+        new Chart(canvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Healthy', 'Low stock', 'Out of stock'],
+                datasets: [{
+                    data: [<?php echo (int) $healthy_stock_count; ?>, <?php echo (int) $low_stock_count; ?>, <?php echo (int) $out_of_stock_count; ?>],
+                    backgroundColor: ['#00796B', '#E08A00', '#D93025'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                    hoverOffset: 4
+                }]
             },
-            scales: {
-                x: {
-                    grid: { display: false }
-                },
-                y: {
-                    beginAtZero: true,
-                    grid: { color: '#f1f1f1' },
-                    ticks: {
-                        stepSize: 1,
-                        precision: 0
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '72%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#004D40',
+                        padding: 10,
+                        displayColors: false,
+                        callbacks: {
+                            label: function (context) {
+                                return context.label + ': ' + context.parsed;
+                            }
+                        }
                     }
                 }
             }
-        }
-    });
-
-    const stockCtx = document.getElementById('stockPieChart').getContext('2d');
-    new Chart(stockCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Healthy', 'Low Stock', 'Out of Stock'],
-            datasets: [{
-                data: [<?php echo $healthy_stock_count; ?>, <?php echo $low_stock_count; ?>, <?php echo $out_of_stock_count; ?>],
-                backgroundColor: ['#00796B', '#F57C00', '#D32F2F'],
-                borderWidth: 2,
-                borderColor: '#ffffff',
-                hoverOffset: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '74%',
-            plugins: { 
-                legend: { 
-                    position: 'bottom',
-                    labels: {
-                        usePointStyle: true,
-                        pointStyle: 'circle',
-                        padding: 18,
-                        font: { size: 12, weight: '500' }
-                    }
-                } 
-            }
-        }
-    });
+        });
+    })();
 </script>
 
 </body>

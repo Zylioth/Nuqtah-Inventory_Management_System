@@ -92,9 +92,6 @@ $categoryIcons = [
             -webkit-font-smoothing: antialiased;
         }
 
-        /* The header already carries a menu button - hide the floating duplicate. */
-        .nq-myreq .position-fixed.btn-menu-toggle { display: none !important; }
-
         .nq-shell {
             width: 100%;
             max-width: 1000px;

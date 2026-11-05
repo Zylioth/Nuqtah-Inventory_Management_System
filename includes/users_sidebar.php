@@ -1,84 +1,240 @@
+<?php
+    $current_page = basename($_SERVER['PHP_SELF']);
+    $user_name    = $_SESSION['full_name'] ?? 'Student';
+    $user_role    = $_SESSION['role'] ?? 'Staff';
+    $initial      = function_exists('mb_substr') ? mb_substr($user_name, 0, 1) : substr($user_name, 0, 1);
+    $cart_count   = isset($_SESSION['cart']) ? count($_SESSION['cart']) : 0;
+
+    $menu_links = [
+        ['inventory_list.php', 'bi-grid-1x2-fill', 'Browse inventory'],
+        ['my_requests.php', 'bi-clock-history', 'My requests'],
+        ['change_password.php', 'bi-key-fill', 'Change password'],
+    ];
+?>
 <style>
-    :root { --nuqtah-teal: #00796B; --nuqtah-dark: #004D40; }
-    
-    .btn-menu-toggle {
-        background-color: var(--nuqtah-teal);
-        color: white;
-        border-radius: 12px;
-        transition: all 0.3s;
+    :root {
+        --us-teal: #00796B;
+        --us-deep: #004D40;
+        --us-ink: #0B2B26;
+        --us-body: rgba(0, 77, 64, 0.72);
+        --us-line: rgba(0, 77, 64, 0.1);
+        --us-font: 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
     }
-    .btn-menu-toggle:hover {
-        background-color: var(--nuqtah-dark);
-        color: white;
-        transform: scale(1.05);
+
+    .us-drawer {
+        --bs-offcanvas-width: 300px;
+        width: 300px;
+        max-width: 88vw;
+        display: flex;
+        flex-direction: column;
+        border: 0;
+        background: #fff;
+        font-family: var(--us-font);
+        box-shadow: 18px 0 45px rgba(0, 30, 25, 0.16);
     }
-    
-    .offcanvas-header { background-color: var(--nuqtah-teal); }
-    
-    .student-nav .list-group-item {
-        border: none;
-        padding: 1rem 1.5rem;
-        margin: 5px 10px;
-        border-radius: 8px;
-        transition: 0.2s;
-        color: #555;
+
+    .us-head {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 1rem 1.1rem;
+        background: var(--us-teal);
     }
-    
-    .student-nav .list-group-item:hover {
-        background-color: #f1f1f1;
-        color: var(--nuqtah-teal);
+    .us-brand { display: inline-flex; align-items: center; text-decoration: none; }
+    .us-brand img { height: 34px; width: auto; display: block; }
+    .us-close {
+        display: grid;
+        place-items: center;
+        width: 2.1rem;
+        height: 2.1rem;
+        padding: 0;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 9px;
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+        font-size: 0.8rem;
+        line-height: 1;
+        transition: background-color 0.2s ease;
     }
-    
-    /* Highlight the active page */
-    .student-nav .list-group-item.active {
-        background-color: rgba(0, 121, 107, 0.1) !important;
-        color: var(--nuqtah-teal) !important;
+    .us-close:hover { background: rgba(255, 255, 255, 0.24); color: #fff; }
+
+    .us-user {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        padding: 1rem 1.1rem;
+        border-bottom: 1px solid var(--us-line);
+    }
+    .us-avatar {
+        flex: 0 0 auto;
+        display: grid;
+        place-items: center;
+        width: 2.6rem;
+        height: 2.6rem;
+        border-radius: 50%;
+        background: rgba(0, 121, 107, 0.1);
+        color: var(--us-teal);
+        font-size: 1rem;
         font-weight: 600;
-        border-left: 4px solid var(--nuqtah-teal) !important;
+        text-transform: uppercase;
+    }
+    .us-user-text { min-width: 0; }
+    .us-user-text strong {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 600;
+        line-height: 1.3;
+        color: var(--us-ink);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .us-user-text span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        margin-top: 0.1rem;
+        font-size: 0.72rem;
+        color: var(--us-body);
+    }
+    .us-user-text span::before {
+        content: "";
+        width: 0.35rem;
+        height: 0.35rem;
+        border-radius: 50%;
+        background: #2E9E5B;
+    }
+
+    .us-nav {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 0.85rem 0.7rem 1rem;
+        overscroll-behavior: contain;
+    }
+    .us-label {
+        margin: 0.15rem 0 0.4rem;
+        padding: 0 0.55rem;
+        font-size: 0.64rem;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: rgba(0, 77, 64, 0.45);
+    }
+    .us-link {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.6rem 0.7rem;
+        margin-bottom: 0.15rem;
+        border-radius: 10px;
+        color: #435a55;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: background-color 0.18s ease, color 0.18s ease;
+    }
+    .us-link i { flex: 0 0 auto; font-size: 1rem; opacity: 0.8; }
+    .us-link span { min-width: 0; }
+    .us-link:hover { background: #f2f8f6; color: var(--us-teal); }
+    .us-link:hover i { opacity: 1; }
+    .us-link.is-active {
+        background: var(--us-teal);
+        color: #fff;
+        font-weight: 600;
+        box-shadow: 0 6px 14px -8px rgba(0, 121, 107, 0.9);
+    }
+    .us-link.is-active i { opacity: 1; }
+    .us-link.is-active:hover { background: var(--us-teal); color: #fff; }
+    .us-count {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.4rem;
+        height: 1.4rem;
+        padding: 0 0.35rem;
+        border-radius: 999px;
+        background: var(--us-teal);
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+    .us-link.is-active .us-count { background: rgba(255, 255, 255, 0.24); }
+
+    .us-foot {
+        flex: 0 0 auto;
+        padding: 0.7rem;
+        border-top: 1px solid var(--us-line);
+    }
+    .us-link--danger { color: #B3261E; }
+    .us-link--danger:hover { background: #FCF3F2; color: #B3261E; }
+    .us-note {
+        margin: 0.35rem 0 0;
+        padding: 0 0.7rem;
+        font-size: 0.7rem;
+        color: rgba(0, 77, 64, 0.45);
+    }
+
+    .us-drawer a:focus-visible,
+    .us-drawer button:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: -2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .us-close, .us-link { transition: none; }
     }
 </style>
 
-<button class="btn btn-menu-toggle shadow-sm position-fixed top-0 start-0 m-3 z-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#studentSidebar">
-    <i class="bi bi-list fs-4"></i>
-</button>
-
-<div class="offcanvas offcanvas-start shadow-lg border-0" tabindex="-1" id="studentSidebar" style="width: 280px;">
-    <div class="offcanvas-header text-white py-4">
-        <div>
-            <h5 class="offcanvas-title fw-bold mb-0">Nuqtah</h5>
-            <small class="opacity-75">Users Menu</small>
-        </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+<aside class="offcanvas offcanvas-start us-drawer" tabindex="-1" id="studentSidebar" aria-label="Account menu">
+    <div class="us-head">
+        <a href="inventory_list.php" class="us-brand">
+            <img src="assets/img/logoNuqtah_White.png" alt="Nuqtah">
+        </a>
+        <button type="button" class="us-close" data-bs-dismiss="offcanvas" aria-label="Close menu">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
     </div>
-    
-    <div class="offcanvas-body p-0">
-        <div class="list-group list-group-flush student-nav mt-3">
-            <?php 
-                // Simple logic to detect active page
-                $current_page = basename($_SERVER['PHP_SELF']); 
-            ?>
-            
-            <a href="inventory_list.php" class="list-group-item list-group-item-action <?php echo ($current_page == 'inventory_list.php') ? 'active' : ''; ?>">
-                <i class="bi bi-grid-fill me-3"></i>Browse Inventory
-            </a>
-            
-            <a href="my_requests.php" class="list-group-item list-group-item-action <?php echo ($current_page == 'my_requests.php') ? 'active' : ''; ?>">
-                <i class="bi bi-clock-history me-3"></i>My Requests
-            </a>
 
-            <a href="change_password.php" class="list-group-item list-group-item-action <?php echo ($current_page == 'change_password.php') ? 'active' : ''; ?>">
-                <i class="bi bi-key-fill me-3"></i>Change Password
-            </a>
-            
-            <hr class="mx-4">
-            
-            <a href="actions/logout.php" class="list-group-item list-group-item-action text-danger">
-                <i class="bi bi-box-arrow-right me-3"></i>Logout
-            </a>
+    <div class="us-user">
+        <span class="us-avatar" aria-hidden="true"><?php echo htmlspecialchars($initial); ?></span>
+        <div class="us-user-text">
+            <strong><?php echo htmlspecialchars($user_name); ?></strong>
+            <span><?php echo htmlspecialchars($user_role); ?></span>
         </div>
     </div>
-    
-    <div class="p-3 text-center border-top">
-        <p class="text-muted mb-0 small">Nuqtah @ ITQSHHB</p>
+
+    <nav class="us-nav" aria-label="Menu">
+        <p class="us-label">Menu</p>
+        <?php foreach ($menu_links as [$href, $icon, $label]): ?>
+            <?php $is_active = ($current_page === $href); ?>
+            <a href="<?php echo $href; ?>"
+               class="us-link <?php echo $is_active ? 'is-active' : ''; ?>"
+               <?php echo $is_active ? 'aria-current="page"' : ''; ?>>
+                <i class="bi <?php echo $icon; ?>" aria-hidden="true"></i>
+                <span><?php echo htmlspecialchars($label); ?></span>
+            </a>
+        <?php endforeach; ?>
+
+        <?php if ($cart_count > 0): ?>
+            <p class="us-label mt-3">Borrowing</p>
+            <a href="cart.php" class="us-link <?php echo ($current_page === 'cart.php') ? 'is-active' : ''; ?>">
+                <i class="bi bi-basket2-fill" aria-hidden="true"></i>
+                <span>Borrowing cart</span>
+                <span class="us-count" aria-label="<?php echo $cart_count; ?> items in cart"><?php echo $cart_count; ?></span>
+            </a>
+        <?php endif; ?>
+    </nav>
+
+    <div class="us-foot">
+        <a href="actions/logout.php" class="us-link us-link--danger">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+            <span>Sign out</span>
+        </a>
+        <p class="us-note">Nuqtah @ ITQSHHB</p>
     </div>
-</div>
+</aside>
