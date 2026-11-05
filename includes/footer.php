@@ -1,3 +1,18 @@
+<style>
+    /* Keep the two footer logos inside the viewport on small screens */
+    @media (max-width: 575.98px) {
+        footer .row > div:first-child > .d-flex {
+            flex-wrap: wrap;
+            row-gap: 0.35rem;
+        }
+        footer .row > div:first-child > .d-flex > img {
+            height: clamp(24px, 9vw, 36px) !important;
+        }
+        footer .row > div:first-child > .d-flex > div[style] {
+            height: 24px !important;
+        }
+    }
+</style>
 <footer class="py-5 mt-auto text-white" style="background-color: #004d40; border-top: 3px solid var(--brand-teal, #00796B);">
     <div class="container">
         <div class="row g-4">
